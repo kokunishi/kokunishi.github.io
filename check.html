@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>国西Monsters 当日出席簿</title>
+<style>
+body{margin:0;background:#f6f6f4;color:#1d1d1b;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px}
+header{background:#1d1d1b;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:16px}
+.nv{display:flex;align-items:center;gap:8px;margin-top:10px}
+.nv button{font:inherit;background:#fff;color:#1d1d1b;border:0;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700}
+.nv button:disabled{opacity:.3}.nv .d{flex:1;text-align:center;font-size:18px;font-weight:700}
+.sum{display:flex;gap:6px;margin-top:10px}.sum div{flex:1;background:#2c2c2a;border-radius:8px;padding:6px;text-align:center;font-size:11px}
+.sum b{display:block;font-size:20px}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 2px;max-width:560px;margin:0 auto;-webkit-overflow-scrolling:touch}
+nav a{flex:none;text-decoration:none;font-size:13px;font-weight:700;padding:8px 13px;border-radius:999px;white-space:nowrap;background:#fff;color:#555;border:1.5px solid #e3e1db}
+nav a.on{background:#1d1d1b;color:#fff;border-color:#1d1d1b}
+main{padding:10px 16px 60px;max-width:560px;margin:0 auto}
+.plan{font-size:13px;color:#555;margin:0 0 6px}.help{font-size:12px;color:#77756f;margin:0 0 10px;line-height:1.6}
+h2{font-size:13px;color:#77756f;margin:16px 0 6px}
+.p{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e3e1db;border-radius:12px;padding:8px 10px;margin-bottom:6px}
+.p.arr{border-color:#3f8a3a;background:#f1f8ee}.p.abs{opacity:.55}
+.ph{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:#e3e1db;display:flex;align-items:center;justify-content:center;font-weight:700;color:#77756f;font-size:16px}
+.big{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:20}.big img{width:72vw;max-width:320px;border-radius:50%}
+.card{background:#fff;border:1px solid #e3e1db;border-radius:12px;padding:14px;margin:10px 0}.card input{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border-radius:8px;border:1px solid #e3e1db}
+.card button{width:100%;margin-top:8px;border:0;border-radius:10px;padding:12px;background:#1d1d1b;color:#fff;font-size:15px;font-weight:700}
+.nm{flex:1;font-weight:700}.nm small{display:block;font-weight:400;font-size:11px;color:#8a5a00}.p.abs .nm small{color:#c0392b}
+.ab{font:inherit;border:1.5px solid #e3e1db;background:#fff;border-radius:999px;padding:9px 0;width:92px;font-size:14px;font-weight:700;color:#77756f}
+.ab.on{background:#3f8a3a;border-color:#3f8a3a;color:#fff}
+select{font-size:13px;padding:6px;border-radius:8px;border:1px solid #e3e1db;background:#fff;width:64px}
+.msg{text-align:center;padding:30px 10px;color:#77756f}
+.st{font-size:11px;color:#999;margin-top:12px}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#1d1d1b;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;display:none;z-index:9}
+</style>
+</head>
+<body>
+<header><h1>国西Monsters 当日出席簿（当番用）</h1>
+  <div class="nv"><button id="pv">◀ 前</button><div class="d" id="dt">読み込み中…</div><button id="nx">次 ▶</button></div>
+  <div class="sum"><div><b id="c1">-</b>到着</div><div><b id="c2">-</b>まだ</div><div><b id="c3">-</b>欠席</div></div>
+</header>
+<nav id="nav"></nav>
+<main>
+  <div class="card" id="login" style="display:none"><div style="font-size:12px;color:#77756f;margin-bottom:6px">パスコードを入れてください</div><input type="password" id="pass" inputmode="numeric"><button id="go">開く</button></div>
+  <div id="plan"></div>
+  <p class="help">着いた子の「到着」を押してください（もう一度押すと取り消し）。当日の急な欠席・遅刻・早退は右の欄で変えられます。前もって連絡があった子は、名前の下に表示されます。</p>
+  <div id="list"><div class="msg">読み込み中…</div></div>
+  <p class="st" id="st"></p>
+</main>
+<div class="toast" id="toast"></div><div class="big" id="big"></div>
+<script src="common.js"></script>
+<script>
+nav('check');
+var D = null, PH = {}, PASS = '', CUR = -1, PENDING = 0;
+try { PASS = localStorage.getItem('kokunishi_check_pass') || ''; } catch (e) {}
+
+function pickDay() {
+  if (CUR >= 0 && CUR < D.days.length) return;
+  CUR = D.days.findIndex(function (d) { return d.key >= D.today; });
+  if (CUR < 0) CUR = D.days.length - 1;
+}
+function info(p, key) {
+  var r = D.att[p.name + '|' + key], a = D.arr[p.name + '|' + key];
+  return { kind: r ? r.kind : '出席', memo: r ? r.memo : '', arr: a || '' };
+}
+function render() {
+  if (!D) return;
+  if (!D.days.length) { $('dt').textContent = '予定なし'; $('list').innerHTML = '<div class="msg">練習・試合の予定がありません</div>'; return; }
+  pickDay();
+  var d = D.days[CUR];
+  $('dt').textContent = d.label + (d.key === D.today ? ' 今日' : '');
+  $('pv').disabled = CUR <= 0; $('nx').disabled = CUR >= D.days.length - 1;
+  $('plan').innerHTML = '<p class="plan">A：' + esc(d.a) + '</p><p class="plan">NEXT：' + esc(d.n) + '</p>';
+  var a = 0, w = 0, x = 0, gs = [], h = '';
+  D.players.forEach(function (p) { var s = info(p, d.key); if (s.kind === '欠席') x++; else if (s.arr) a++; else w++; if (gs.indexOf(p.grade) < 0) gs.push(p.grade); });
+  $('c1').textContent = a; $('c2').textContent = w; $('c3').textContent = x;
+  gs.forEach(function (g) {
+    h += '<h2>' + esc(g) + '</h2>';
+    D.players.forEach(function (p, i) {
+      if (p.grade !== g) return;
+      var s = info(p, d.key), abs = s.kind === '欠席', note = s.kind !== '出席' ? s.kind + (s.memo ? '：' + s.memo : '') : '';
+      var ph = PH[p.name] ? '<img class="ph" src="' + PH[p.name] + '" data-big="1">' : '<div class="ph">' + esc(p.name.charAt(0)) + '</div>';
+      h += '<div class="p' + (s.arr ? ' arr' : '') + (abs ? ' abs' : '') + '">' + ph + '<div class="nm">' + esc(p.name) + (note ? '<small>' + esc(note) + '</small>' : '') + '</div>' +
+        (abs ? '' : '<button class="ab' + (s.arr ? ' on' : '') + '" data-i="' + i + '">' + (s.arr ? '✓ ' + esc(s.arr) : '到着') + '</button>') +
+        '<select data-i="' + i + '">' + ['出席', '欠席', '遅刻', '早退'].map(function (k) { return '<option' + (k === s.kind ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div>';
+    });
+  });
+  $('list').innerHTML = h;
+}
+function save() { cacheSet('kokunishi_check_cache', D); }
+
+// ① 前回のデータと写真をすぐ表示
+var C = cacheGet('kokunishi_check_cache');
+PH = cacheGet('kokunishi_photos') || {};
+if (C && C.days) { D = C; D.today = jpToday(); render(); $('st').textContent = '前回の内容を表示中…最新を確認しています'; }
+function jpToday() {
+  var p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  return p;
+}
+
+// ② 最新を取得（写真も同時に）
+function load() {
+  if (PENDING) return;
+  api({ what: 'check', pass: PASS }).then(function (d) {
+    if (d.needPass) { $('login').style.display = 'block'; $('list').innerHTML = ''; $('dt').textContent = ''; return; }
+    $('login').style.display = 'none';
+    try { localStorage.setItem('kokunishi_check_pass', PASS); } catch (e) {}
+    var key = D && D.days[CUR] ? D.days[CUR].key : '';
+    if (PENDING) return;
+    D = d; CUR = key ? D.days.findIndex(function (x) { return x.key === key; }) : -1;
+    save(); render();
+    $('st').textContent = '最新の内容です（ほかの当番さんの入力も、開き直すと反映されます）';
+  }).catch(function (e) {
+    if (!D) $('list').innerHTML = '<div class="msg">読み込めませんでした。電波の良いところで開き直してください。<br><small>' + esc(e.message || e) + '</small></div>';
+    else $('st').textContent = '最新の確認ができませんでした（前回の内容を表示中）';
+  });
+  api({ what: 'photos', pass: PASS }).then(function (d) {
+    if (d && d.photos) { PH = d.photos; cacheSet('kokunishi_photos', PH); render(); }
+  }).catch(function () {});
+}
+load();
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') load(); });
+$('go').onclick = function () { PASS = $('pass').value.trim(); load(); };
+
+$('pv').onclick = function () { if (CUR > 0) { CUR--; render(); } };
+$('nx').onclick = function () { if (D && CUR < D.days.length - 1) { CUR++; render(); } };
+
+function done() { PENDING = Math.max(0, PENDING - 1); }
+$('list').addEventListener('click', function (e) {
+  var im = e.target.closest('img[data-big]');
+  if (im) { $('big').innerHTML = '<img src="' + im.src + '">'; $('big').style.display = 'flex'; return; }
+  var b = e.target.closest('button.ab'); if (!b) return;
+  var p = D.players[b.dataset.i], key = D.days[CUR].key, k = p.name + '|' + key, on = !D.arr[k];
+  if (on) D.arr[k] = '…'; else delete D.arr[k];
+  render(); PENDING++;
+  api({ what: 'arrive', key: key, name: p.name, on: on ? '1' : '0', pass: PASS }).then(function (r) {
+    done(); if (on) D.arr[k] = r.time; save(); render(); toast(on ? p.name + ' 到着' : '取り消しました');
+  }).catch(function (err) {
+    done(); if (on) delete D.arr[k]; render(); alert('保存できませんでした。もう一度押してください。\n' + (err.message || err));
+  });
+});
+$('big').onclick = function () { this.style.display = 'none'; };
+$('list').addEventListener('change', function (e) {
+  if (e.target.tagName !== 'SELECT') return;
+  var p = D.players[e.target.dataset.i], key = D.days[CUR].key, k = p.name + '|' + key, kind = e.target.value;
+  var memo = D.att[k] ? D.att[k].memo : '';
+  if (kind === '出席' && !memo) delete D.att[k]; else D.att[k] = { kind: kind, memo: memo };
+  if (kind === '欠席') delete D.arr[k];
+  render(); save(); PENDING++;
+  api({ what: 'checkset', key: key, name: p.name, kind: kind, memo: memo, pass: PASS }).then(function () {
+    done(); toast(p.name + '：' + kind);
+  }).catch(function (err) { done(); alert('保存できませんでした。もう一度選んでください。\n' + (err.message || err)); });
+});
+</script>
+</body>
+</html>
