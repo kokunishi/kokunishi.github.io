@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>国西Monsters 当番希望</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--ink:#1d1d1b;--sub:#77756f;--line:#e3e1db;--a:#2f6fb3;--a-bg:#e3eefa;--n:#3f8a3a;--n-bg:#e4f2df;--we:#fbf3f3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px}
+header{background:#1d1d1b;color:#fff;padding:16px}header h1{margin:0;font-size:17px}header p{margin:4px 0 0;font-size:12px;opacity:.75}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 2px;max-width:560px;margin:0 auto;-webkit-overflow-scrolling:touch}
+nav a{flex:none;text-decoration:none;font-size:13px;font-weight:700;padding:8px 13px;border-radius:999px;white-space:nowrap;background:#fff;color:#555;border:1.5px solid #e3e1db}
+nav a.on{background:#1d1d1b;color:#fff;border-color:#1d1d1b}
+main{padding:12px 16px 110px;max-width:560px;margin:0 auto}
+.pick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.pick label{font-size:12px;color:var(--sub);display:block;margin-bottom:6px}
+select{width:100%;font-size:16px;padding:10px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.help{font-size:12px;color:var(--sub);margin:0 0 12px;line-height:1.6}
+.day{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.day.we{background:var(--we)}
+.dh{font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline}
+.dh small{font-weight:400;color:var(--sub);font-size:11px}
+.row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.tag{font-size:11px;font-weight:700;border-radius:4px;padding:2px 6px;min-width:44px;text-align:center}
+.tag.a{background:var(--a-bg);color:var(--a)}.tag.n{background:var(--n-bg);color:var(--n)}
+.plan{flex:1;font-size:13px}.plan.off{color:var(--sub)}
+button.opt{font:inherit;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:700;color:var(--sub);min-width:64px}
+button.opt.on.a{background:var(--a);border-color:var(--a);color:#fff}
+button.opt.on.n{background:var(--n);border-color:var(--n);color:#fff}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.bar .in{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.bar .sum{flex:1;font-size:12px;color:var(--sub)}
+.save{font:inherit;background:#1d1d1b;color:#fff;border:0;border-radius:10px;padding:13px 22px;font-size:15px;font-weight:700}
+.save:disabled{opacity:.4}
+.msg{text-align:center;padding:30px 10px;color:var(--sub)}
+.st{font-size:11px;color:#999;margin-top:12px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1d1d1b;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;display:none;z-index:9}
+</style>
+</head>
+<body>
+<header><h1>国西Monsters 当番希望</h1><p id="sub">読み込み中…</p></header>
+<nav id="nav"></nav>
+<main>
+  <div class="pick">
+    <label for="who">お名前を選んでください</label>
+    <select id="who" disabled><option value="">読み込み中…</option></select>
+  </div>
+  <p class="help">当番に入れる日の「入る」を押してください。兄弟でA・NEXT両方の家庭は、その日に入るチームを1つ選んでください。もう一度押すと取り消せます。最後に「保存する」を押すと完了です。</p>
+  <div id="list"><div class="msg">読み込み中…</div></div>
+  <p class="st" id="st"></p>
+</main>
+<div class="bar"><div class="in">
+  <div class="sum" id="sum">名前を選ぶと入力できます</div>
+  <button class="save" id="save" disabled>保存する</button>
+</div></div>
+<div class="toast" id="toast"></div>
+<script src="common.js"></script>
+<script>
+nav('duty');
+var NDAYS = 31, CACHE_KEY = 'kokunishi_duty_cache';
+var DATA = null, VALS = null, NAME = '', dirty = false, fresh = false, saving = false, reqId = 0;
+try { NAME = localStorage.getItem('kokunishi_duty') || ''; } catch (e) {}
+
+function normVals(v) {
+  var out = [];
+  for (var i = 0; i < NDAYS; i++) { var x = v && v[i] != null ? String(v[i]) : ''; out.push(x === 'A' || x === 'N' ? x : ''); }
+  return out;
+}
+function fillNames(names) {
+  $('who').innerHTML = '<option value="">― 選択 ―</option>' +
+    names.map(function (n) { return '<option' + (n === NAME ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('');
+  $('who').disabled = false;
+}
+function setSub() { $('sub').textContent = DATA.title + '　' + DATA.days.length + '日分'; }
+function msg(t) { $('list').innerHTML = '<div class="msg">' + t + '</div>'; }
+function keepCache() {
+  if (!DATA) return;
+  cacheSet(CACHE_KEY, { title: DATA.title, days: DATA.days, names: DATA.names, meName: VALS ? NAME : '', me: VALS });
+}
+
+// ① 前回のデータをすぐ表示（最新が届くまで保存・入力はロック）
+var C = cacheGet(CACHE_KEY);
+if (C && C.days && C.names) {
+  DATA = C; fillNames(C.names); setSub();
+  if (NAME && C.meName === NAME && C.me) { VALS = normVals(C.me); render(); $('st').textContent = '前回の内容を表示中…最新を確認しています'; }
+  else if (!NAME) msg('まずお名前を選んでください');
+  else msg('読み込み中…');
+}
+
+// ② 最新を取得
+function load(n) {
+  var my = ++reqId; fresh = false;
+  return api({ what: 'duty', name: n || '' }).then(function (d) {
+    if (my !== reqId) return;
+    DATA = d; fillNames(d.names); setSub();
+    if (n && d.me) { VALS = normVals(d.me); dirty = false; fresh = true; render(); }
+    else if (n) { VALS = null; summary(); msg('名簿にお名前がありません。選び直してください'); }
+    else { VALS = null; summary(); msg('まずお名前を選んでください'); }
+    keepCache();
+    $('st').textContent = '最新の内容です';
+  }).catch(function (e) {
+    if (my !== reqId) return;
+    if (!VALS) msg('読み込めませんでした。電波の良いところで開き直してください。<br><small>' + esc(e.message || e) + '</small>');
+    else $('st').textContent = '最新の確認ができませんでした（前回の内容を表示中。保存はできません）';
+  });
+}
+load(NAME);
+
+$('who').addEventListener('change', function (e) {
+  var n = e.target.value;
+  if (dirty && !confirm('保存していない変更があります。名前を切り替えますか？')) { e.target.value = NAME; return; }
+  NAME = n; dirty = false; VALS = null; fresh = false;
+  try { localStorage.setItem('kokunishi_duty', n); } catch (err) {}
+  if (!n) { reqId++; msg('まずお名前を選んでください'); summary(); return; }
+  msg('読み込み中…'); summary();
+  load(n);
+});
+
+function line(cls, label, plan, btn) {
+  var p = plan || '―', off = !plan || plan === '休み' || plan === '応援';
+  return '<div class="row"><span class="tag ' + cls + '">' + label + '</span><span class="plan' + (off ? ' off' : '') + '">' + esc(p) + '</span>' + btn + '</div>';
+}
+function chip(i, val, text, cls) {
+  return '<button class="opt ' + cls + (VALS[i] === val ? ' on' : '') + '" data-i="' + i + '" data-v="' + val + '">' + text + '</button>';
+}
+function render() {
+  if (!DATA || !VALS) return;
+  if (!DATA.days.length) { msg('今月の対象日はまだありません'); summary(); return; }
+  $('list').innerHTML = DATA.days.map(function (d) {
+    var we = (d.w === '土' || d.w === '日' || d.hol) ? ' we' : '';
+    return '<div class="day' + we + '"><div class="dh"><span>' + d.m + '/' + d.d + '（' + esc(d.w) + (d.hol ? '・祝' : '') + '）</span>' +
+      (d.memo ? '<small>' + esc(d.memo) + '</small>' : '') + '</div>' +
+      line('a', 'A', d.a, d.needA ? chip(d.i, 'A', '入る', 'a') : '') +
+      line('n', 'NEXT', d.n, d.needN ? chip(d.i, 'N', '入る', 'n') : '') + '</div>';
+  }).join('');
+  summary();
+}
+function summary() {
+  if (!DATA || !VALS) { $('sum').textContent = '名前を選ぶと入力できます'; $('save').disabled = true; return; }
+  var n = DATA.days.filter(function (d) { return VALS[d.i]; }).length;
+  $('sum').textContent = '希望 ' + n + '日' + (dirty ? '（未保存）' : '');
+  $('save').disabled = !dirty || !fresh || saving;
+}
+$('list').addEventListener('click', function (e) {
+  var b = e.target.closest('button.opt'); if (!b || !VALS) return;
+  if (!fresh) { toast('最新を確認しています。少し待ってください'); return; }
+  if (saving) return;
+  var i = Number(b.dataset.i), v = b.dataset.v;
+  VALS[i] = (VALS[i] === v) ? '' : v;
+  dirty = true; render();
+});
+$('save').addEventListener('click', function () {
+  if (!NAME || !VALS || saving) return;
+  saving = true; $('save').disabled = true; $('save').textContent = '保存中…';
+  api({ what: 'dutyset', name: NAME, vals: VALS.join(',') }).then(function () {
+    saving = false; dirty = false; $('save').textContent = '保存する'; keepCache(); summary(); toast('保存しました');
+  }).catch(function (e) {
+    saving = false; $('save').textContent = '保存する'; summary();
+    alert('保存できませんでした。もう一度押してください。\n' + (e.message || e));
+  });
+});
+window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+</script>
+</body>
+</html>
