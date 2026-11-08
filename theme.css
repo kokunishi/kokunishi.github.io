@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Anton&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Dela+Gothic+One&text=%E4%BA%88%E5%AE%9A%E8%A1%A8%E5%87%BA%E6%AC%A0%E9%80%A3%E7%B5%A1%E5%BD%93%E7%95%AA%E5%B8%8C%E6%9C%9B%E6%97%A5%E5%87%BA%E5%B8%AD%E7%B0%BF%E7%94%A8%EF%BC%88%EF%BC%89&display=swap");
 /* 国西Monsters 共通デザイン v3「BLACK × GOLD」
    チームカラー #ffce1f ／ 黒地に金。各ページはこのファイルだけで見た目が決まります。 */
 :root{
@@ -202,6 +203,22 @@ button.opt.on.n{background:linear-gradient(180deg,#fff,#e9e5d6);color:#121000;bo
 .big{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:20}
 .big img{width:72vw;max-width:320px;border-radius:50%;border:2px solid var(--gold);box-shadow:0 0 40px rgba(255,206,31,.4)}
 
+
+
+/* ===== 立体の文字（ぷっくり光る金）===== ここから：消すと、ふつうの白い見出しに戻ります */
+header h1{
+  font-family:"Dela Gothic One",var(--jp);font-weight:900;font-synthesis:none;font-size:35px;letter-spacing:.05em;line-height:1.18;
+  background:linear-gradient(180deg,#fffdea 0%,#ffeb8f 20%,#ffce1f 46%,#ffb300 53%,#ffd23d 72%,#fff0a6 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  -webkit-text-stroke:1px rgba(255,251,214,.7);
+  filter:drop-shadow(0 1px 0 #d29a00) drop-shadow(0 2px 0 #b07a00) drop-shadow(0 3px 0 #8f6000)
+         drop-shadow(0 8px 9px rgba(0,0,0,.7)) drop-shadow(0 0 24px rgba(255,206,31,.4));
+}
+header h1::after{-webkit-text-stroke:0;margin-top:17px;height:3px}
+header p{margin-top:18px}
+.wm b{filter:drop-shadow(0 1px 0 #c58f00) drop-shadow(0 2px 0 #9c6a00) drop-shadow(0 5px 6px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(255,206,31,.45))}
+.pg-check header h1{font-size:19px;-webkit-text-stroke:.5px rgba(255,251,214,.6);filter:drop-shadow(0 1px 0 #b98200) drop-shadow(0 2px 0 #855900) drop-shadow(0 0 12px rgba(255,206,31,.35))}
+/* ===== 立体の文字 ここまで ===== */
 
 /* ===== 遊び心：弾むネオンのバスケットボール（fun.js が出す）===== */
 .bk{position:fixed;width:var(--s);height:var(--s);z-index:30;pointer-events:none;animation:bkdrift 3.9s linear forwards}
