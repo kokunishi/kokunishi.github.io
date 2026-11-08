@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>国西Monsters 出欠連絡</title>
+<style>
+body{margin:0;background:#f6f6f4;color:#1d1d1b;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px}
+header{background:#1d1d1b;color:#fff;padding:16px}header h1{margin:0;font-size:17px}header p{margin:4px 0 0;font-size:12px;opacity:.75}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 2px;max-width:560px;margin:0 auto;-webkit-overflow-scrolling:touch}
+nav a{flex:none;text-decoration:none;font-size:13px;font-weight:700;padding:8px 13px;border-radius:999px;white-space:nowrap;background:#fff;color:#555;border:1.5px solid #e3e1db}
+nav a.on{background:#1d1d1b;color:#fff;border-color:#1d1d1b}
+main{padding:12px 16px 60px;max-width:560px;margin:0 auto}
+.card{background:#fff;border:1px solid #e3e1db;border-radius:12px;padding:12px;margin-bottom:12px}
+label{font-size:12px;color:#77756f;display:block;margin-bottom:6px}
+select,input{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border-radius:8px;border:1px solid #e3e1db;background:#fff}
+.help{font-size:12px;color:#77756f;margin:0 0 12px;line-height:1.6}
+h2{font-size:15px;margin:18px 0 8px}
+.day{background:#fff;border:1px solid #e3e1db;border-radius:12px;padding:10px 12px;margin-bottom:8px}.day.we{background:#fbf3f3}
+.day.off{border-color:#e7a29a}
+.dh{font-weight:700}.pl{font-size:13px;color:#555;margin:2px 0 8px}
+.chips{display:flex;gap:6px}.chips button{flex:1;font:inherit;border:1.5px solid #e3e1db;background:#fff;border-radius:999px;padding:8px 0;font-size:14px;font-weight:700;color:#77756f}
+.chips button.on{color:#fff}.chips button.on.k0{background:#3f8a3a;border-color:#3f8a3a}.chips button.on.k1{background:#c0392b;border-color:#c0392b}
+.chips button.on.k2,.chips button.on.k3{background:#8a5a00;border-color:#8a5a00}
+.memo{margin-top:8px}.msg{text-align:center;padding:30px 10px;color:#77756f}
+.st{font-size:11px;color:#999;margin-top:12px}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#1d1d1b;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;display:none;z-index:9}
+</style>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header><h1>国西Monsters 出欠連絡</h1><p>休む・遅れる・早く帰る日だけ入力してください</p></header>
+<nav id="nav"></nav>
+<main>
+  <div class="card"><label for="who">選手の名前を選んでください</label><select id="who" disabled><option>読み込み中…</option></select></div>
+  <p class="help">何も押さなければ「出席」のままです。欠席・遅刻・早退の日だけボタンを押すと、その場で保存されます。理由や時間はメモに入れてください（任意）。締切はなく、当日でも入力できます。</p>
+  <div id="list"></div>
+  <p class="st" id="st"></p>
+</main>
+<div class="toast" id="toast"></div>
+<script src="common.js"></script>
+<script>
+nav('attend');
+var KINDS = ['出席', '欠席', '遅刻', '早退'], DATA = null, NAME = '', PLAYERS = null;
+try { NAME = localStorage.getItem('kokunishi_attend') || ''; } catch (e) {}
+
+function fillNames(players) {
+  PLAYERS = players;
+  if (!players.length) { $('who').innerHTML = '<option>―</option>'; $('list').innerHTML = '<div class="msg">選手名簿がまだ空です</div>'; return; }
+  var gs = [], h = '<option value="">― 選択 ―</option>';
+  players.forEach(function (p) { if (gs.indexOf(p.grade) < 0) gs.push(p.grade); });
+  gs.forEach(function (g) {
+    h += '<optgroup label="' + esc(g) + '">' + players.filter(function (p) { return p.grade === g; })
+      .map(function (p) { return '<option' + (p.name === NAME ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('') + '</optgroup>';
+  });
+  $('who').innerHTML = h; $('who').disabled = false;
+}
+
+// ① 前回のデータをすぐ表示
+var C = cacheGet('kokunishi_attend_cache');
+if (C && C.players) {
+  fillNames(C.players);
+  if (NAME && C.me && C.me.name === NAME) { DATA = C.me; render(); $('st').textContent = '前回の内容を表示中…最新を確認しています'; }
+  else if (!NAME) $('list').innerHTML = '<div class="msg">まず選手の名前を選んでください</div>';
+}
+if (!DATA && NAME) $('list').innerHTML = '<div class="msg">読み込み中…</div>';
+
+// ② 最新を取得
+function load(n) {
+  return api({ what: 'attend', name: n || '' }).then(function (d) {
+    fillNames(d.players);
+    if (n && d.me) { DATA = d.me; render(); }
+    else if (!n) $('list').innerHTML = '<div class="msg">まず選手の名前を選んでください</div>';
+    cacheSet('kokunishi_attend_cache', d);
+    $('st').textContent = '最新の内容です';
+  }).catch(function (e) {
+    if (!DATA) $('list').innerHTML = '<div class="msg">読み込めませんでした。電波の良いところで開き直してください。<br><small>' + esc(e.message || e) + '</small></div>';
+    else $('st').textContent = '最新の確認ができませんでした（前回の内容を表示中）';
+  });
+}
+load(NAME);
+
+$('who').addEventListener('change', function (e) {
+  var n = e.target.value; if (!n) return;
+  NAME = n; try { localStorage.setItem('kokunishi_attend', n); } catch (err) {}
+  DATA = null; $('list').innerHTML = '<div class="msg">読み込み中…</div>';
+  load(n);
+});
+
+function render() {
+  var h = '';
+  DATA.months.forEach(function (m, mi) {
+    h += '<h2>' + esc(m.label) + '（' + esc(DATA.name) + '・' + esc(DATA.grade) + '）</h2>';
+    if (!m.days.length) { h += '<p class="help">この月の練習・試合はまだありません</p>'; return; }
+    m.days.forEach(function (d, di) {
+      var we = (d.w === '土' || d.w === '日' || d.hol) ? ' we' : '', off = d.kind !== '出席' ? ' off' : '';
+      h += '<div class="day' + we + off + '"><div class="dh">' + esc(d.label) + '</div><div class="pl">' +
+        (d.a && d.a !== '休み' && d.a !== '応援' ? 'A：' + esc(d.a) + '<br>' : '') + (d.n && d.n !== '休み' && d.n !== '応援' ? 'NEXT：' + esc(d.n) : '') + '</div><div class="chips">' +
+        KINDS.map(function (k, ki) { return '<button class="k' + ki + (d.kind === k ? ' on' : '') + '" data-m="' + mi + '" data-d="' + di + '" data-k="' + k + '">' + k + '</button>'; }).join('') + '</div>' +
+        (d.kind !== '出席' ? '<div class="memo"><input data-m="' + mi + '" data-d="' + di + '" value="' + esc(d.memo) + '" placeholder="メモ（例：体調不良、18:00に到着）"></div>' : '') + '</div>';
+    });
+  });
+  $('list').innerHTML = h;
+}
+function keepCache() { var c = cacheGet('kokunishi_attend_cache') || {}; c.players = PLAYERS; c.me = DATA; cacheSet('kokunishi_attend_cache', c); }
+function save(d) {
+  keepCache();
+  api({ what: 'attendset', name: DATA.name, key: d.key, kind: d.kind, memo: d.memo || '' })
+    .then(function () { toast(d.kind === '出席' ? '出席に戻しました' : d.kind + 'で保存しました'); })
+    .catch(function (e) { alert('保存できませんでした。もう一度押してください。\n' + (e.message || e)); });
+}
+$('list').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  var d = DATA.months[b.dataset.m].days[b.dataset.d];
+  if (d.kind === b.dataset.k) return;
+  d.kind = b.dataset.k; if (d.kind === '出席') d.memo = '';
+  render(); save(d);
+});
+$('list').addEventListener('change', function (e) {
+  if (e.target.tagName !== 'INPUT') return;
+  var d = DATA.months[e.target.dataset.m].days[e.target.dataset.d]; d.memo = e.target.value; save(d);
+});
+</script>
+</body>
+</html>
