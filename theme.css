@@ -215,4 +215,30 @@ button.opt.on.n{background:linear-gradient(180deg,#fff,#e9e5d6);color:#121000;bo
 .bsh{position:absolute;left:8%;right:8%;bottom:-7px;height:11px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,206,31,.65),transparent)}
 .mark{-webkit-tap-highlight-color:transparent}
 
+
+/* ===== スタッフ可否（当番希望と同じ見た目＋4つのボタン）===== */
+.schips{display:flex;gap:6px;margin-top:8px}
+.schips button.opt{flex:1;min-width:0;padding:11px 0;font-size:13.5px}
+button.opt.on.r{background:linear-gradient(180deg,#ffc58f,#ff8a3d);color:#2a1200;border-color:transparent;box-shadow:0 0 22px rgba(255,138,61,.55)}
+button.opt.on.x{background:linear-gradient(180deg,#ff9a9a,#ff4d4d);color:#fff;border-color:transparent;box-shadow:0 0 22px rgba(255,77,77,.5)}
+
+/* ===== 見るだけの2ページ（出欠一覧・スタッフ予定）===== */
+.pg-view .day{background:linear-gradient(180deg,#151515,#0e0e0e);border:1px solid var(--line);border-radius:18px;padding:13px 14px;margin-bottom:10px;box-shadow:0 12px 26px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05)}
+.pg-view .day.we{border-color:rgba(255,206,31,.32)}
+.pg-view .dh{font-family:var(--disp);font-size:25px;letter-spacing:.04em;margin-bottom:6px;color:#fff}
+.pg-view .day.we .dh{color:var(--gold)}
+.pg-view .pl{display:flex;align-items:center;gap:10px;padding:3px 0;font-size:13.5px;color:var(--ink)}
+.pg-view .tm,.pg-view .who{display:block;font-size:14px;gap:0;margin-top:9px;padding:9px 0 0;border-top:1px dashed rgba(255,255,255,.16)}
+.cnt{font-size:13px;margin:0 0 8px;color:var(--sub)}
+.cnt b{font-family:var(--disp);font-weight:400;font-size:28px;letter-spacing:.02em;color:var(--gold);text-shadow:0 0 14px rgba(255,206,31,.45);margin:0 2px}
+.gbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.gb{font-size:11.5px;background:#1b1b1b;border:1px solid var(--line);border-radius:7px;padding:3px 8px;color:var(--sub)}
+.gb.less{background:rgba(255,77,77,.14);border-color:rgba(255,77,77,.5);color:#ff9a9a;font-weight:700}
+.pg-view .g{display:flex;gap:10px;padding:4px 0;font-size:14px;align-items:flex-start;line-height:1.65}
+.pg-view .g .nm{flex:1;font-weight:400;font-size:14px}
+.t.r{background:#ff8a3d;color:#1f0d00}
+.t.x{background:#ff4d4d;color:#fff}
+.t.u{background:transparent;color:#ff9a9a;border:1px solid rgba(255,77,77,.6)}
+.pg-view .tabs{margin-top:4px}
+
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
