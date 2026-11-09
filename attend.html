@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>国西Monsters 出欠連絡</title>
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=8">
 <meta name="theme-color" content="#070707">
 <link rel="icon" href="mark.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -106,43 +106,88 @@ $('list').addEventListener('change', function (e) {
 </script>
 <script>
 /* 国西Monsters 遊び心：金のネオンのバスケットボールが、ポンッと出てきて弾んで消える。
-   ・動きを減らす設定の端末では出ません ・ロゴを押すと、ボールがまとめて出ます ・タップの邪魔はしません */
+   ・ロゴを押すと、ボールがまとめて出ます
+   ・端末の「動きを減らす」設定がオンのときは、自動では出ません（ロゴを押したときだけ出ます）
+   ・ページのアドレスの最後に ?fun=1 を付けると、設定に関係なく自動で出て、確認メッセージも出ます */
 (function () {
-  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var SVG = '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-    '<g fill="none" stroke-linecap="round">' +
-    '<g stroke="#ffce1f" stroke-width="5.2"><circle cx="50" cy="50" r="45"/><path d="M50 5V95M5 50H95M19 15C37 33 37 67 19 85M81 15C63 33 63 67 81 85"/></g>' +
-    '<g stroke="#fff7cf" stroke-width="1.7"><circle cx="50" cy="50" r="45"/><path d="M50 5V95M5 50H95M19 15C37 33 37 67 19 85M81 15C63 33 63 67 81 85"/></g>' +
+  var force = /[?&]fun=1/.test(location.search);
+  var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var auto = force || !reduce;
+  var G = '<path d="M50 5V95M5 50H95M19 15C37 33 37 67 19 85M81 15C63 33 63 67 81 85"/>';
+  var SVG = '<svg viewBox="-12 -12 124 124" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+    '<g stroke="#ffce1f" stroke-opacity=".14" stroke-width="20"><circle cx="50" cy="50" r="45"/>' + G + '</g>' +
+    '<g stroke="#ffce1f" stroke-opacity=".28" stroke-width="12"><circle cx="50" cy="50" r="45"/>' + G + '</g>' +
+    '<g stroke="#ffce1f" stroke-width="5.2"><circle cx="50" cy="50" r="45"/>' + G + '</g>' +
+    '<g stroke="#fff7cf" stroke-width="1.7"><circle cx="50" cy="50" r="45"/>' + G + '</g>' +
     '</g></svg>';
-  var live = 0, timer = 0;
+  var D = 3900, live = 0, made = 0;
+  var UP = 'cubic-bezier(.2,.65,.4,1)', DOWN = 'cubic-bezier(.6,.05,.8,.35)';
 
   function spawn() {
-    if (document.hidden || live >= 3) return;
+    if (document.hidden || live >= 3 || !document.body.animate) return;
     var vw = window.innerWidth, vh = window.innerHeight;
     var size = 46 + Math.random() * 36;
     var dir = Math.random() < 0.5 ? -1 : 1;
-    var leftPx = 12 + Math.random() * Math.max(10, vw - size - 24);
+    var left = 12 + Math.random() * Math.max(10, vw - size - 24);
+    var floorTop = Math.round(vh - size - vh * (0.05 + Math.random() * 0.22));
+    var H = vh * (0.2 + Math.random() * 0.18);
+    var dx = dir * (50 + Math.random() * 110);
+    var spin = dir * (300 + Math.random() * 420);
     var el = document.createElement('div');
     el.className = 'bk';
-    el.style.cssText = 'left:' + leftPx + 'px;bottom:' + (4 + Math.random() * 22) + 'vh;--s:' + size + 'px;' +
-      '--h:' + Math.round(vh * (0.2 + Math.random() * 0.18)) + 'px;' +
-      '--dx:' + Math.round(dir * (50 + Math.random() * 110)) + 'px;' +
-      '--spin:' + Math.round(dir * (300 + Math.random() * 420)) + 'deg;';
+    el.style.cssText = 'left:' + Math.round(left) + 'px;top:' + floorTop + 'px;width:' + Math.round(size) + 'px;height:' + Math.round(size) + 'px;';
     el.innerHTML = '<i class="bsh"></i><div class="bw"><div class="bs">' + SVG + '</div></div>';
     document.body.appendChild(el);
-    live++;
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); live--; }, 4400);
+    live++; made++;
+    var o = { duration: D, fill: 'forwards' };
+    function hop(y, sx, sy) { return 'translateY(' + Math.round(y) + 'px) scale(' + sx + ',' + sy + ')'; }
+    el.animate([
+      { opacity: 0, transform: 'translateX(0px)', offset: 0 },
+      { opacity: 0.88, offset: 0.04 },
+      { opacity: 0.88, offset: 0.86 },
+      { opacity: 0, transform: 'translateX(' + Math.round(dx) + 'px)', offset: 1 }
+    ], { duration: D, fill: 'forwards', easing: 'linear' });
+    el.querySelector('.bw').animate([
+      { transform: hop(0, 0, 0), offset: 0, easing: 'cubic-bezier(.3,1.6,.5,1)' },
+      { transform: hop(0, 1.14, .86), offset: .07, easing: UP },
+      { transform: hop(-H, .96, 1.07), offset: .21, easing: DOWN },
+      { transform: hop(0, 1.2, .8), offset: .34, easing: UP },
+      { transform: hop(-H * .62, .97, 1.05), offset: .46, easing: DOWN },
+      { transform: hop(0, 1.14, .86), offset: .57, easing: UP },
+      { transform: hop(-H * .34, .98, 1.04), offset: .66, easing: DOWN },
+      { transform: hop(0, 1.1, .9), offset: .74, easing: UP },
+      { transform: hop(-H * .14, 1, 1), offset: .81, easing: DOWN },
+      { transform: hop(0, 1.06, .94), offset: .87 },
+      { transform: hop(0, .9, .9), offset: 1 }
+    ], o);
+    el.querySelector('.bs').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + Math.round(spin) + 'deg)' }], { duration: D, fill: 'forwards', easing: 'linear' });
+    el.querySelector('.bsh').animate([
+      { transform: 'scale(0)', opacity: 0, offset: 0 }, { transform: 'scale(1.1)', opacity: 1, offset: .07 },
+      { transform: 'scale(.35)', opacity: .35, offset: .21 }, { transform: 'scale(1.15)', opacity: 1, offset: .34 },
+      { transform: 'scale(.55)', opacity: .5, offset: .46 }, { transform: 'scale(1.05)', opacity: 1, offset: .57 },
+      { transform: 'scale(.75)', opacity: .7, offset: .66 }, { transform: 'scale(1)', opacity: 1, offset: .74 },
+      { transform: 'scale(.9)', opacity: .85, offset: .81 }, { transform: 'scale(1)', opacity: 1, offset: 1 }
+    ], { duration: D, fill: 'forwards', easing: 'linear' });
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); live--; }, D + 500);
   }
-  function loop() {
-    spawn();
-    timer = setTimeout(loop, 5500 + Math.random() * 5000);
-  }
+  function loop() { spawn(); setTimeout(loop, 5500 + Math.random() * 5000); }
   function burst() { for (var i = 0; i < 3; i++) setTimeout(spawn, i * 260); }
+  function note(text) {
+    var n = document.createElement('div');
+    n.style.cssText = 'position:fixed;left:12px;right:12px;bottom:84px;z-index:60;background:#0d0d0d;color:#fff;border:1px solid #ffce1f;border-radius:12px;padding:10px 14px;font-size:12px;line-height:1.7;text-align:center;pointer-events:none';
+    n.textContent = text;
+    document.body.appendChild(n);
+    setTimeout(function () { if (n.parentNode) n.parentNode.removeChild(n); }, 9000);
+  }
 
   function start() {
     var mark = document.querySelector('.mark');
     if (mark) { mark.style.cursor = 'pointer'; mark.addEventListener('click', burst); }
-    setTimeout(loop, 1400);
+    if (auto) setTimeout(loop, force ? 500 : 1400);
+    if (force) {
+      note('ボール確認｜動きを減らす設定：' + (reduce ? 'オン' : 'オフ') + '｜アニメーション機能：' + (document.body.animate ? '使えます' : '使えません') + '｜画面：' + window.innerWidth + '×' + window.innerHeight + '｜ロゴを押すとボールが出ます');
+      setTimeout(function () { note('ボールを ' + made + ' 個出しました（見えなければ、この数字を教えてください）'); }, 3000);
+    }
   }
   window.kmBall = spawn;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
