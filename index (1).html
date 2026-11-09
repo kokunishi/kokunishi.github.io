@@ -5,42 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>国西Monsters 予定表</title>
-<style>
-body{margin:0;background:#f6f6f4;color:#1d1d1b;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px}
-header{background:#1d1d1b;color:#fff;padding:16px}header h1{margin:0;font-size:17px}header p{margin:4px 0 0;font-size:12px;opacity:.75}
-nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 2px;max-width:560px;margin:0 auto;-webkit-overflow-scrolling:touch}
-nav a{flex:none;text-decoration:none;font-size:13px;font-weight:700;padding:8px 13px;border-radius:999px;white-space:nowrap;background:#fff;color:#555;border:1.5px solid #e3e1db}
-nav a.on{background:#1d1d1b;color:#fff;border-color:#1d1d1b}
-main{padding:12px 16px 40px;max-width:560px;margin:0 auto}
-.tabs{display:flex;gap:6px;margin-bottom:12px}
-.tabs button{flex:1;font:inherit;border:1.5px solid #e3e1db;background:#fff;border-radius:10px;padding:10px 0;font-weight:700;color:#77756f}
-.tabs button.on{background:#1d1d1b;border-color:#1d1d1b;color:#fff}
-.day{background:#fff;border:1px solid #e3e1db;border-radius:12px;padding:8px 12px;margin-bottom:6px;scroll-margin-top:12px}.day.we{background:#fbf3f3}
-.day.past{opacity:.38;filter:grayscale(1)}.ps{font-size:10px;color:#777;border:1px solid #bbb;border-radius:4px;padding:0 5px;margin-left:6px;font-weight:400}
-.day.today{background:#fff8d6;border:3px solid #1d1d1b;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:12px 14px;margin:12px 0}.day.today .dh{font-size:17px}
-.day.nx{border:2px solid #2f6fb3}.td.nxb{background:#2f6fb3}
-.todaybar{display:flex;justify-content:space-between;align-items:center;background:#1d1d1b;color:#fff;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px}.todaybar a{color:#fff;font-weight:700}
-.day.empty{padding:6px 12px;opacity:.55}.day.empty .dh{display:inline}.none{display:inline;font-size:12px;color:#77756f;margin-left:8px}
-.dh{font-weight:700;font-size:14px;margin-bottom:2px}.td{background:#1d1d1b;color:#fff;font-size:11px;border-radius:4px;padding:1px 6px;margin-left:6px}
-.tm{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:14px}.tm.off{color:#999}.pl{flex:1}
-.t{font-size:11px;font-weight:700;border-radius:4px;padding:2px 6px;min-width:40px;text-align:center}.t.a{background:#e3eefa;color:#2f6fb3}.t.n{background:#e4f2df;color:#3f8a3a}
-.dt{font-size:11px;color:#8a5a00;background:#fbefd6;border-radius:4px;padding:2px 6px;white-space:nowrap}
-.memo{font-size:12px;color:#c0392b;margin-top:2px}
-.notes{font-size:12px;color:#555;line-height:1.8;background:#fff;border:1px solid #e3e1db;border-radius:12px;padding:10px 12px;margin-top:12px}
-.st{font-size:11px;color:#999;margin-top:12px}
-.msg{text-align:center;padding:30px 10px;color:#77756f}
-</style>
+<link rel="stylesheet" href="theme.css?v=9">
+<meta name="theme-color" content="#070707">
+<link rel="icon" href="mark.png">
+<link rel="apple-touch-icon" href="icon.png">
 </head>
-<body>
-<header><h1>国西Monsters</h1><p id="sub">読み込み中…</p></header>
+<body class="pg-index">
+<header><div class="brand"><img class="mark" src="mark.png" alt=""><div class="wm">KOKUNISHI<b>MONSTERS</b></div></div>
+<h1>予定表</h1><p id="sub">読み込み中…</p></header>
 <nav id="nav"></nav>
 <main>
   <div class="tabs" id="tabs"></div>
+  <div class="vbar">
+    <div class="seg" id="seg"><button data-v="list">リスト</button><button data-v="table">表</button></div>
+    <button class="imgbtn" id="imgbtn">表を画像で保存</button>
+  </div>
   <div id="bar"></div>
   <div id="list"><div class="msg">読み込み中…</div></div>
   <div id="notes"></div>
   <p class="st" id="st"></p>
 </main>
+<div class="ov" id="ov"><div class="ovin">
+  <div class="ovbar"><button class="go" id="ovsave">保存・共有</button><button id="ovclose">閉じる</button></div>
+  <p class="ovhint">うまく保存できないときは、画像を長押しして「写真に追加」（Androidは「画像をダウンロード」）を選んでください。</p>
+  <img id="ovimg" alt="月間予定表">
+</div></div>
 <script>
 // ▼ スプレッドシートのWebアプリURL（URLが変わったときだけ書きかえる）
 const GAS = 'https://script.google.com/macros/s/AKfycbzWKxTzp-gFCTlm5i-hG02nMi_izvL6k5xKX6Kkl_a-sBGoyK1wJoWLtrCyrT1owAv1WA/exec';
@@ -48,13 +37,15 @@ const KEY = 'kokunishi_sched_v1';
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let DATA = null, CUR = -1, fresh = false;
+let VIEW = 'list';
+try { VIEW = localStorage.getItem('kokunishi_sched_view') === 'table' ? 'table' : 'list'; } catch (e) {}
 
 // 上のボタン（予定表以外は今までのページへ）
 const STAFF = new URLSearchParams(location.search).get('v') === 's';
 const NAV = STAFF
   ? [['staff','スタッフ可否'],['attendview','出欠一覧'],['staffview','スタッフ予定'],['schedule','予定表']]
   : [['schedule','予定表'],['attend','出欠連絡'],['duty','当番希望'],['check','当日出席簿'],['photo','写真登録']];
-const FAST = { attend: 'attend.html', check: 'check.html' };
+const FAST = { attend: 'attend.html', duty: 'duty.html', check: 'check.html', staff: 'staff.html', attendview: 'attendview.html', staffview: 'staffview.html' };
 $('nav').innerHTML = NAV.map(it => it[0] === 'schedule'
   ? '<a class="on" href="#">' + it[1] + '</a>'
   : '<a href="' + (FAST[it[0]] ? FAST[it[0]] + (STAFF ? '?v=s' : '') : GAS + '?mode=' + it[0] + (STAFF ? '&v=s' : '')) + '">' + it[1] + '</a>').join('');
@@ -73,27 +64,170 @@ function render(keepScroll) {
   const M = ms[CUR], isThis = M.y === T.y && M.m === T.m;
   $('sub').textContent = M.y + '年' + M.m + '月　' + (M.kind === 'next' ? '来月の予定（予定や当番はこれから変わることがあります）' : M.kind === 'saved' ? '過去の予定表' : '今月の予定');
   $('tabs').innerHTML = ms.map((x, i) => '<button class="' + (i === CUR ? 'on' : '') + '" data-i="' + i + '">' + x.m + '月</button>').join('');
+  $('seg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === VIEW));
+  document.querySelector('main').classList.toggle('wide', VIEW === 'table');
   const dnum = d => M.y * 10000 + M.m * 100 + d.d;
   const nextAct = M.days.filter(d => dnum(d) >= T.n && (d.aon || d.non))[0];
+  const ai = M.days.findIndex(d => dnum(d) >= T.n);
+  const anchored = ai >= 0;
   const team = (lb, cls, plan, duty, on) => !plan ? '' :
     '<div class="tm' + (on ? '' : ' off') + '"><span class="t ' + cls + '">' + lb + '</span><span class="pl">' + esc(plan) + '</span>' +
     (duty && duty !== '不要' ? '<span class="dt">当番 ' + esc(duty) + '</span>' : '') + '</div>';
-  let anchored = false;
-  $('list').innerHTML = M.days.map(d => {
-    const n = dnum(d), isToday = n === T.n, past = n < T.n, isNext = !isToday && nextAct === d;
-    const has = d.a || d.n || d.memo;
-    let anchor = '';
-    if (!anchored && n >= T.n) { anchor = ' id="now"'; anchored = true; }
-    return '<div' + anchor + ' class="day' + (d.w === '土' || d.w === '日' || d.hol ? ' we' : '') + (isToday ? ' today' : '') + (past ? ' past' : '') + (isNext ? ' nx' : '') + (has ? '' : ' empty') + '">' +
-      '<div class="dh">' + M.m + '/' + d.d + '（' + esc(d.w) + (d.hol ? '・祝' : '') + '）' + (isToday ? '<span class="td">今日</span>' : '') + (isNext ? '<span class="td nxb">次の練習</span>' : '') + (past ? '<span class="ps">終了</span>' : '') + '</div>' +
-      (has ? team('A', 'a', d.a, d.ad, d.aon) + team('NEXT', 'n', d.n, d.nd, d.non) + (d.memo ? '<div class="memo">' + esc(d.memo) + '</div>' : '') : '<div class="none">練習なし</div>') + '</div>';
-  }).join('') || '<div class="msg">この月の予定はまだありません</div>';
+  if (!M.days.length) {
+    $('list').innerHTML = '<div class="msg">この月の予定はまだありません</div>';
+  } else if (VIEW === 'table') {
+    $('list').innerHTML = tableHtml(M, T, ai);
+  } else {
+    $('list').innerHTML = M.days.map((d, idx) => {
+      const n = dnum(d), isToday = n === T.n, past = n < T.n, isNext = !isToday && nextAct === d;
+      const has = d.a || d.n || d.memo;
+      const anchor = idx === ai ? ' id="now"' : '';
+      const wd = esc(d.w) + (d.hol ? '・祝' : '');
+      const badge = (isToday ? '<span class="td">今日</span>' : '') + (isNext ? '<span class="td nxb">次の練習</span>' : '');
+      return '<div' + anchor + ' class="day' + (d.w === '土' || d.w === '日' || d.hol ? ' we' : '') + (isToday ? ' today' : '') + (past ? ' past' : '') + (isNext ? ' nx' : '') + (has ? '' : ' empty') + '">' +
+        '<div class="dd"><b>' + d.d + '</b><i>' + wd + '</i></div><div class="dm">' +
+        (badge ? '<div class="dbadge">' + badge + '</div>' : '') +
+        (has ? team('A', 'a', d.a, d.ad, d.aon) + team('NEXT', 'n', d.n, d.nd, d.non) + (d.memo ? '<div class="memo">' + esc(d.memo) + '</div>' : '') : '<div class="none">練習なし</div>') + '</div></div>';
+    }).join('');
+  }
   $('bar').innerHTML = isThis && anchored ? '<div class="todaybar"><span>今日は ' + T.m + '/' + T.d + '</span><a href="#now" id="go">今日の予定へ ↓</a></div>' : '';
   if ($('go')) $('go').onclick = e => { e.preventDefault(); $('now').scrollIntoView({ behavior: 'smooth' }); };
   $('notes').innerHTML = DATA.notes && DATA.notes.length ? '<div class="notes"><b>≪お願いと注意点≫</b><br>' + DATA.notes.map(esc).join('<br>') + '</div>' : '';
   $('st').textContent = (fresh ? '最新の予定です' : '前回の予定を表示中…最新を確認しています') + (DATA.at ? '（' + DATA.at + ' 時点）' : '') + '。変更があったときはLINEでもお知らせします。';
   if (!keepScroll && isThis && $('now')) setTimeout(() => $('now').scrollIntoView({ block: 'start' }), 50);
 }
+
+// ===== 表（紙の月間予定表と同じ並び）=====
+function cellTxt(v) {
+  return esc(v).replace(/(\d{1,2}:\d{2}(?:[〜～~-]\d{1,2}:\d{2})?)/g, '<wbr><span class="nb">$1</span>');
+}
+function tableHtml(M, T, ai) {
+  const dn = d => M.y * 10000 + M.m * 100 + d.d;
+  const body = M.days.map((d, idx) => {
+    const n = dn(d), we = d.w === '土' || d.w === '日' || d.hol;
+    const cls = ((n === T.n ? 'tdy ' : '') + (n < T.n ? 'past' : '')).trim();
+    const g = c => we ? ' class="' + c + '"' : '';
+    return '<tr' + (idx === ai ? ' id="now"' : '') + (cls ? ' class="' + cls + '"' : '') + '>' +
+      '<td' + g('gy') + '>' + d.d + '</td><td' + g('gy') + '>' + esc(d.w) + '</td>' +
+      '<td' + g('bl') + '>' + cellTxt(d.a) + '</td><td' + g('bl') + '>' + esc(d.ad) + '</td>' +
+      '<td' + g('gr') + '>' + cellTxt(d.n) + '</td><td' + g('gr') + '>' + esc(d.nd) + '</td>' +
+      '<td' + g('gy') + '>' + esc(d.memo) + '</td></tr>';
+  }).join('');
+  return '<table class="tbl"><colgroup><col style="width:7%"><col style="width:7%"><col style="width:24%"><col style="width:10%"><col style="width:24%"><col style="width:10%"><col style="width:18%"></colgroup>' +
+    '<thead><tr><th></th><th>曜</th><th class="bl">A</th><th>当番</th><th class="gr">NEXT/<wbr>Second</th><th>当番</th><th>備考</th></tr></thead><tbody>' + body + '</tbody></table>';
+}
+
+// ===== 表を画像にする（canvasで描画）=====
+function wrapText(ctx, text, maxW) {
+  const lines = [];
+  String(text == null ? '' : text).split('\n').forEach(par => {
+    let cur = '';
+    for (const ch of par) {
+      if (cur && ctx.measureText(cur + ch).width > maxW) { lines.push(cur); cur = ch; } else cur += ch;
+    }
+    lines.push(cur);
+  });
+  return lines;
+}
+function buildImage(M, logo) {
+  const FONT = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif';
+  const S = 2, PAD = 24, CW = [48, 48, 250, 90, 250, 90, 224], TW = 1000, W = TW + PAD * 2;
+  const FS = 20, LH = 26, MINH = 42, HH = 46, TITLE = 84;
+  const BL = '#b8d0ec', GR = '#c6e1ab', GY = '#cfcfcf';
+  const m = document.createElement('canvas').getContext('2d');
+  m.font = FS + 'px ' + FONT;
+  const rows = M.days.map(d => {
+    const cells = [String(d.d), d.w || '', d.a || '', d.ad || '', d.n || '', d.nd || '', d.memo || ''];
+    const lines = cells.map((t, i) => wrapText(m, t, CW[i] - 14));
+    const h = Math.max(MINH, Math.max.apply(null, lines.map(l => l.length)) * LH + 12);
+    return { lines: lines, h: h, we: d.w === '土' || d.w === '日' || !!d.hol };
+  });
+  m.font = '17px ' + FONT;
+  const notes = [];
+  (DATA.notes || []).forEach(t => wrapText(m, t, TW).forEach(l => notes.push(l)));
+  const NLH = 27, notesH = notes.length ? 18 + 36 + notes.length * NLH : 0;
+  const tableH = HH + rows.reduce((a, r) => a + r.h, 0);
+  const H = TITLE + tableH + notesH + PAD;
+
+  const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+  const x = c.getContext('2d'); x.scale(S, S);
+  x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+  x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#111';
+  x.font = 'bold 32px ' + FONT;
+  x.fillText('国西Monsters　' + M.y + '年' + M.m + '月予定表', W / 2, TITLE / 2 + 4);
+  if (logo) x.drawImage(logo, PAD + 4, 14, 60, 60);
+
+  const xs = [PAD]; CW.forEach((w, i) => xs.push(xs[i] + w));
+  let y = TITLE;
+  // 見出し
+  const hf = [null, null, BL, null, GR, null, null], ht = ['', '曜', 'A', '当番', 'NEXT/Second', '当番', '備考'];
+  ht.forEach((t, i) => {
+    if (hf[i]) { x.fillStyle = hf[i]; x.fillRect(xs[i], y, CW[i], HH); }
+    x.fillStyle = '#111'; x.font = 'bold 22px ' + FONT; x.fillText(t, xs[i] + CW[i] / 2, y + HH / 2);
+  });
+  const ys = [y]; y += HH; ys.push(y);
+  rows.forEach(r => {
+    const f = r.we ? [GY, GY, BL, BL, GR, GR, GY] : [null, null, null, null, null, null, null];
+    r.lines.forEach((ls, i) => {
+      if (f[i]) { x.fillStyle = f[i]; x.fillRect(xs[i], y, CW[i], r.h); }
+      x.fillStyle = '#111'; x.font = FS + 'px ' + FONT;
+      const top = y + r.h / 2 - (ls.length * LH) / 2 + LH / 2;
+      ls.forEach((l, k) => x.fillText(l, xs[i] + CW[i] / 2, top + k * LH));
+    });
+    y += r.h; ys.push(y);
+  });
+  // 罫線
+  x.strokeStyle = '#222'; x.lineWidth = 1.5;
+  ys.forEach(yy => { x.beginPath(); x.moveTo(xs[0], yy); x.lineTo(xs[7], yy); x.stroke(); });
+  xs.forEach(xx => { x.beginPath(); x.moveTo(xx, ys[0]); x.lineTo(xx, y); x.stroke(); });
+  x.lineWidth = 3.5; x.strokeRect(xs[0], ys[0], TW, y - ys[0]);
+  // お願いと注意点
+  if (notes.length) {
+    x.textAlign = 'left'; x.fillStyle = '#111';
+    x.font = 'bold 19px ' + FONT; x.fillText('≪お願いと注意点≫', PAD, y + 36);
+    x.font = '17px ' + FONT;
+    notes.forEach((l, i) => x.fillText(l, PAD, y + 36 + 34 + i * NLH - 8));
+  }
+  return c;
+}
+
+let IMG = null;
+function loadLogo() { return new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'mark_paper.png'; }); }
+async function openImage() {
+  if (!DATA || !DATA.months || !DATA.months[CUR]) return;
+  const M = DATA.months[CUR];
+  let cv;
+  const logo = await loadLogo();
+  try { cv = buildImage(M, logo); } catch (e) { alert('画像を作れませんでした。'); return; }
+  cv.toBlob(b => {
+    if (!b) { alert('画像を作れませんでした。'); return; }
+    IMG = { blob: b, url: URL.createObjectURL(b), name: '国西Monsters_' + M.y + '年' + M.m + '月予定表.png' };
+    $('ovimg').src = IMG.url; $('ov').style.display = 'block'; $('ov').scrollTop = 0;
+  }, 'image/png');
+}
+function closeImage() {
+  $('ov').style.display = 'none'; $('ovimg').removeAttribute('src');
+  if (IMG) { URL.revokeObjectURL(IMG.url); IMG = null; }
+}
+async function saveImage() {
+  if (!IMG) return;
+  const file = new File([IMG.blob], IMG.name, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: IMG.name }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = IMG.url; a.download = IMG.name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+$('seg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  VIEW = b.dataset.v;
+  try { localStorage.setItem('kokunishi_sched_view', VIEW); } catch (err) {}
+  render(true);
+});
+$('imgbtn').addEventListener('click', openImage);
+$('ovclose').addEventListener('click', closeImage);
+$('ovsave').addEventListener('click', saveImage);
 
 $('tabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -121,6 +255,96 @@ function load() {
 }
 load();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); });
+</script>
+<script>
+/* 国西Monsters 遊び心：金のネオンのバスケットボールが、ポンッと出てきて弾んで消える。
+   ・ロゴを押すと、ボールがまとめて出ます
+   ・端末の「動きを減らす」設定がオンのときは、自動では出ません（ロゴを押したときだけ出ます）
+   ・ページのアドレスの最後に ?fun=1 を付けると、設定に関係なく自動で出て、確認メッセージも出ます */
+(function () {
+  var force = /[?&]fun=1/.test(location.search);
+  var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var auto = force || !reduce;
+  var G = '<path d="M50 5V95M5 50H95M19 15C37 33 37 67 19 85M81 15C63 33 63 67 81 85"/>';
+  var SVG = '<svg viewBox="-12 -12 124 124" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+    '<g stroke="#ffce1f" stroke-opacity=".14" stroke-width="20"><circle cx="50" cy="50" r="45"/>' + G + '</g>' +
+    '<g stroke="#ffce1f" stroke-opacity=".28" stroke-width="12"><circle cx="50" cy="50" r="45"/>' + G + '</g>' +
+    '<g stroke="#ffce1f" stroke-width="5.2"><circle cx="50" cy="50" r="45"/>' + G + '</g>' +
+    '<g stroke="#fff7cf" stroke-width="1.7"><circle cx="50" cy="50" r="45"/>' + G + '</g>' +
+    '</g></svg>';
+  var D = 3900, live = 0, made = 0;
+  var UP = 'cubic-bezier(.2,.65,.4,1)', DOWN = 'cubic-bezier(.6,.05,.8,.35)';
+
+  function spawn() {
+    if (document.hidden || live >= 3 || !document.body.animate) return;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var size = 46 + Math.random() * 36;
+    var dir = Math.random() < 0.5 ? -1 : 1;
+    var left = 12 + Math.random() * Math.max(10, vw - size - 24);
+    var floorTop = Math.round(vh - size - vh * (0.05 + Math.random() * 0.22));
+    var H = vh * (0.2 + Math.random() * 0.18);
+    var dx = dir * (50 + Math.random() * 110);
+    var spin = dir * (300 + Math.random() * 420);
+    var el = document.createElement('div');
+    el.className = 'bk';
+    el.style.cssText = 'left:' + Math.round(left) + 'px;top:' + floorTop + 'px;width:' + Math.round(size) + 'px;height:' + Math.round(size) + 'px;';
+    el.innerHTML = '<i class="bsh"></i><div class="bw"><div class="bs">' + SVG + '</div></div>';
+    document.body.appendChild(el);
+    live++; made++;
+    var o = { duration: D, fill: 'forwards' };
+    function hop(y, sx, sy) { return 'translateY(' + Math.round(y) + 'px) scale(' + sx + ',' + sy + ')'; }
+    el.animate([
+      { opacity: 0, transform: 'translateX(0px)', offset: 0 },
+      { opacity: 0.88, offset: 0.04 },
+      { opacity: 0.88, offset: 0.86 },
+      { opacity: 0, transform: 'translateX(' + Math.round(dx) + 'px)', offset: 1 }
+    ], { duration: D, fill: 'forwards', easing: 'linear' });
+    el.querySelector('.bw').animate([
+      { transform: hop(0, 0, 0), offset: 0, easing: 'cubic-bezier(.3,1.6,.5,1)' },
+      { transform: hop(0, 1.14, .86), offset: .07, easing: UP },
+      { transform: hop(-H, .96, 1.07), offset: .21, easing: DOWN },
+      { transform: hop(0, 1.2, .8), offset: .34, easing: UP },
+      { transform: hop(-H * .62, .97, 1.05), offset: .46, easing: DOWN },
+      { transform: hop(0, 1.14, .86), offset: .57, easing: UP },
+      { transform: hop(-H * .34, .98, 1.04), offset: .66, easing: DOWN },
+      { transform: hop(0, 1.1, .9), offset: .74, easing: UP },
+      { transform: hop(-H * .14, 1, 1), offset: .81, easing: DOWN },
+      { transform: hop(0, 1.06, .94), offset: .87 },
+      { transform: hop(0, .9, .9), offset: 1 }
+    ], o);
+    el.querySelector('.bs').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + Math.round(spin) + 'deg)' }], { duration: D, fill: 'forwards', easing: 'linear' });
+    el.querySelector('.bsh').animate([
+      { transform: 'scale(0)', opacity: 0, offset: 0 }, { transform: 'scale(1.1)', opacity: 1, offset: .07 },
+      { transform: 'scale(.35)', opacity: .35, offset: .21 }, { transform: 'scale(1.15)', opacity: 1, offset: .34 },
+      { transform: 'scale(.55)', opacity: .5, offset: .46 }, { transform: 'scale(1.05)', opacity: 1, offset: .57 },
+      { transform: 'scale(.75)', opacity: .7, offset: .66 }, { transform: 'scale(1)', opacity: 1, offset: .74 },
+      { transform: 'scale(.9)', opacity: .85, offset: .81 }, { transform: 'scale(1)', opacity: 1, offset: 1 }
+    ], { duration: D, fill: 'forwards', easing: 'linear' });
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); live--; }, D + 500);
+  }
+  function loop() { spawn(); setTimeout(loop, 5500 + Math.random() * 5000); }
+  function burst() { for (var i = 0; i < 3; i++) setTimeout(spawn, i * 260); }
+  function note(text) {
+    var n = document.createElement('div');
+    n.style.cssText = 'position:fixed;left:12px;right:12px;bottom:84px;z-index:60;background:#0d0d0d;color:#fff;border:1px solid #ffce1f;border-radius:12px;padding:10px 14px;font-size:12px;line-height:1.7;text-align:center;pointer-events:none';
+    n.textContent = text;
+    document.body.appendChild(n);
+    setTimeout(function () { if (n.parentNode) n.parentNode.removeChild(n); }, 9000);
+  }
+
+  function start() {
+    var mark = document.querySelector('.mark');
+    if (mark) { mark.style.cursor = 'pointer'; mark.addEventListener('click', burst); }
+    if (auto) setTimeout(loop, force ? 500 : 1400);
+    if (force) {
+      note('ボール確認｜動きを減らす設定：' + (reduce ? 'オン' : 'オフ') + '｜アニメーション機能：' + (document.body.animate ? '使えます' : '使えません') + '｜画面：' + window.innerWidth + '×' + window.innerHeight + '｜ロゴを押すとボールが出ます');
+      setTimeout(function () { note('ボールを ' + made + ' 個出しました（見えなければ、この数字を教えてください）'); }, 3000);
+    }
+  }
+  window.kmBall = spawn;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
 </script>
 </body>
 </html>

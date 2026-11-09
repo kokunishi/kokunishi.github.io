@@ -11,9 +11,9 @@ function api(params) {
 }
 function cacheGet(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
 function cacheSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-var STAFF = new URLSearchParams(location.search).get('v') === 's';
+var STAFF = new URLSearchParams(location.search).get('v') === 's' || /(^|\/)(staff|attendview|staffview)\.html$/.test(location.pathname);
 function nav(active) {
-  var fast = { schedule: './', attend: 'attend.html', duty: 'duty.html', check: 'check.html' };
+  var fast = { schedule: './', attend: 'attend.html', duty: 'duty.html', check: 'check.html', staff: 'staff.html', attendview: 'attendview.html', staffview: 'staffview.html' };
   var items = STAFF
     ? [['staff', 'スタッフ可否'], ['attendview', '出欠一覧'], ['staffview', 'スタッフ予定'], ['schedule', '予定表']]
     : [['schedule', '予定表'], ['attend', '出欠連絡'], ['duty', '当番希望'], ['check', '当日出席簿'], ['photo', '写真登録']];
