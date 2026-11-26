@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>国西Monsters 予定入力（係用）</title>
+<style>
+  :root { --bg:#f6f6f4; --card:#fff; --ink:#1d1d1b; --sub:#77756f; --line:#e3e1db;
+          --a:#2f6fb3; --a-bg:#e3eefa; --n:#3f8a3a; --n-bg:#e4f2df; --we:#fbf3f3; --chg:#c0392b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif; font-size:15px; }
+  header { background:#1d1d1b; color:#fff; padding:16px; }
+  header h1 { margin:0; font-size:17px; }
+  header p { margin:4px 0 0; font-size:12px; opacity:.75; }
+  main { padding:12px 16px 220px; max-width:560px; margin:0 auto; }
+  .help { font-size:12px; color:var(--sub); margin:0 0 12px; line-height:1.6; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; }
+  input[type=text], input[type=password], select { width:100%; font-size:16px; padding:10px; border-radius:8px; border:1px solid var(--line); background:#fff; }
+  .btn { background:#1d1d1b; color:#fff; border:0; border-radius:10px; padding:12px 18px; font-size:15px; font-weight:700; }
+  .btn.ghost { background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btn:disabled { opacity:.4; }
+  .day { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+  .day.we { background:var(--we); }
+  .dh { font-weight:700; display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .dh button { font-size:13px; padding:6px 14px; border-radius:999px; border:1px solid var(--line); background:#fff; font-weight:700; }
+  .row { display:flex; gap:8px; align-items:center; padding:3px 0; font-size:13px; }
+  .tag { font-size:11px; font-weight:700; border-radius:4px; padding:2px 6px; min-width:44px; text-align:center; }
+  .tag.a { background:var(--a-bg); color:var(--a); } .tag.n { background:var(--n-bg); color:var(--n); }
+  .chg { color:var(--chg); font-size:10px; font-weight:700; margin-left:4px; }
+  .memo { font-size:11px; color:var(--sub); margin-top:2px; }
+  .ed { border-top:1px dashed var(--line); margin-top:8px; padding-top:8px; }
+  .team { margin-bottom:12px; }
+  .team h3 { margin:0 0 6px; font-size:13px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .chip { border:1.5px solid var(--line); background:#fff; border-radius:999px; padding:7px 12px; font-size:13px; font-weight:700; color:var(--sub); }
+  .chip.on { background:#1d1d1b; border-color:#1d1d1b; color:#fff; }
+  .team.a .chip.on { background:var(--a); border-color:var(--a); }
+  .team.n .chip.on { background:var(--n); border-color:var(--n); }
+  .times { display:flex; gap:6px; align-items:center; margin-top:6px; }
+  .times select { flex:1; }
+  .lbl { font-size:11px; color:var(--sub); margin:6px 0 4px; }
+  .prev { font-size:12px; background:var(--bg); border-radius:6px; padding:6px 8px; margin-top:6px; }
+  .acts { display:flex; gap:8px; justify-content:flex-end; }
+  .msg { text-align:center; padding:30px 10px; color:var(--sub); }
+  .tabs { display:flex; gap:6px; margin-bottom:12px; }
+  .tabs button { flex:1; border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:10px 0; font-size:15px; font-weight:700; color:var(--sub); }
+  .tabs button.on { background:#1d1d1b; border-color:#1d1d1b; color:#fff; }
+  .pub { border-radius:12px; padding:12px; margin-bottom:12px; display:flex; align-items:center; gap:10px; font-size:13px; }
+  .pub.off { background:#fbefd6; color:#8a5a00; } .pub.on { background:#e4f2df; color:#3f8a3a; }
+  .pub b { display:block; font-size:14px; } .pub div { flex:1; }
+  .pub button { border:0; border-radius:999px; padding:9px 14px; font-size:13px; font-weight:700; background:#1d1d1b; color:#fff; white-space:nowrap; }
+  .notify { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:2px solid #06c755; box-shadow:0 -4px 16px rgba(0,0,0,.12); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); z-index:8; }
+  .notify .in { max-width:560px; margin:0 auto; }
+  .notify .t { font-weight:700; font-size:14px; margin-bottom:6px; }
+  .notify pre { white-space:pre-wrap; font-family:inherit; font-size:12px; background:#f6f6f4; border-radius:8px; padding:8px; margin:0 0 8px; max-height:120px; overflow:auto; }
+  .notify .row2 { display:flex; gap:8px; }
+  .notify a, .notify button { flex:1; text-align:center; border-radius:10px; padding:11px 0; font-size:14px; font-weight:700; text-decoration:none; border:0; }
+  .notify .line { background:#06c755; color:#fff; } .notify .cp { background:#f6f6f4; color:#1d1d1b; border:1px solid #e3e1db; } .notify .x { flex:0 0 64px; background:#fff; color:#77756f; border:1px solid #e3e1db; }
+  .toast { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); background:#1d1d1b; color:#fff;
+           padding:10px 18px; border-radius:999px; font-size:14px; display:none; z-index:9; }
+</style>
+</head>
+<body>
+<header>
+  <h1>国西Monsters 予定入力（係用）</h1>
+  <p id="sub">読み込み中…</p>
+</header>
+<main>
+  <div id="login" class="card" style="display:none">
+    <div class="lbl">係用パスコード</div>
+    <input type="password" id="pass" inputmode="numeric" autocomplete="off">
+    <div style="margin-top:10px;text-align:right"><button class="btn" id="go">開く</button></div>
+  </div>
+  <div class="tabs" id="tabs" style="display:none"></div>
+  <div id="pubbox"></div>
+  <div id="monthbox"></div>
+  <p class="help" id="help" style="display:none">固定の練習（戸田小・国西小）は自動で入っています。<b>固定と違う日だけ</b>「変更」を押して入力してください。「固定どおり」を選ぶと元に戻ります。</p>
+  <p class="help" id="note" style="display:none;color:#8a5a00">この月は当番まで決まった予定表です。ここで直すと「保存_○年○月」タブの予定表が書き換わります。当番を変えるときは、スプレッドシートの「保存_」タブで直してください。</p>
+  <div id="list"></div>
+</main>
+<div class="notify" id="notify" style="display:none"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+var GAS = 'https://script.google.com/macros/s/AKfycbzWKxTzp-gFCTlm5i-hG02nMi_izvL6k5xKX6Kkl_a-sBGoyK1wJoWLtrCyrT1owAv1WA/exec';
+function api(params) {
+  var q = 'mode=api&t=' + Date.now();
+  Object.keys(params).forEach(function (k) { q += '&' + k + '=' + encodeURIComponent(params[k]); });
+  return fetch(GAS + '?' + q).then(function (r) { return r.json(); }).then(function (d) { if (d && d.error) throw new Error(d.error); return d; });
+}
+</script>
+<script>
+const PLACES = ['国西', '戸田小', '市原小', '菊間', '加茂', '八幡'];
+const TIMES = []; for (let h = 7; h <= 21; h++) for (let m = 0; m < 60; m += 15) TIMES.push(h + '：' + (m ? m : '00'));
+let PASS = '', D = null, open = -1, ED = null, W = 0, CHG = [];
+try { CHG = JSON.parse(localStorage.getItem('kokunishi_chg') || '[]'); } catch (e) { CHG = []; }
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2200); }
+
+try { PASS = localStorage.getItem('kokunishi_plan_pass') || ''; } catch (e) {}
+load();
+
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const w = Number(b.dataset.w); if (w === W) return;
+  W = w; load();
+});
+$('go').addEventListener('click', () => { PASS = $('pass').value.trim(); load(); });
+
+function load() {
+  $('list').innerHTML = '<div class="msg">読み込み中…</div>';
+  api({ what: 'planget', pass: PASS, which: W }).then(d => {
+    if (d.needPass) {
+      $('login').style.display = 'block'; $('help').style.display = 'none'; $('list').innerHTML = '';
+      $('sub').textContent = PASS ? 'パスコードが違います' : 'パスコードを入力してください';
+      return;
+    }
+    try { localStorage.setItem('kokunishi_plan_pass', PASS); } catch (e) {}
+    D = d; W = d.which || 0; open = -1; $('login').style.display = 'none'; $('help').style.display = 'block';
+    $('tabs').style.display = 'flex';
+    $('tabs').innerHTML = (d.tabs || []).map((t, k) => '<button data-w="' + k + '" class="' + (k === W ? 'on' : '') + '">' + esc(t) + '</button>').join('');
+    $('sub').textContent = d.title + 'の予定' + (d.saved ? '（確定済みの予定表）' : '');
+    $('note').style.display = d.saved ? 'block' : 'none';
+    pubRender();
+    monthRender();
+    notifyRender();
+    $('help').style.display = d.saved ? 'none' : 'block';
+    render();
+  }).catch(e => { $('list').innerHTML = '<div class="msg">エラー：' + esc(e.message || e) + '</div>'; });
+}
+
+function pubRender() {
+  if (!D || !D.isNext) { $('pubbox').innerHTML = ''; return; }
+  $('pubbox').innerHTML = D.pub
+    ? '<div class="pub on"><div><b>保護者の予定表に公開中</b>保護者もこの月の予定を見られます</div><button id="pubbtn">非公開にする</button></div>'
+    : '<div class="pub off"><div><b>保護者にはまだ非公開</b>予定がそろったら公開してください</div><button id="pubbtn">保護者に公開する</button></div>';
+  $('pubbtn').onclick = () => {
+    const on = !D.pub;
+    if (on && !confirm('この月の予定表を保護者に公開しますか？')) return;
+    $('pubbtn').disabled = true;
+    api({ what: 'planpublish', pass: PASS, on: on ? '1' : '0' }).then(r => { D.pub = r.pub; pubRender(); toast(r.pub ? '保護者に公開しました' : '非公開にしました'); })
+      .catch(e => { $('pubbtn').disabled = false; alert('切り替えできませんでした：' + (e.message || e)); });
+  };
+}
+
+function monthRender() {
+  const box = $('monthbox');
+  if (!D || D.saved) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="pub" style="background:#fff;border:1px solid var(--line);color:var(--ink)"><div><b>月の切り替え</b>毎月20日ごろ、今月を保存して来月の入力を始めます</div><button id="nmbtn">次の月を始める</button></div>';
+  $('nmbtn').onclick = () => {
+    if (!confirm('今月の予定表を保存して、次の月の入力を始めます。\n予定入力・当番希望・スタッフ可否・当番決定は空になります。よろしいですか？')) return;
+    const b = $('nmbtn'); b.disabled = true; b.textContent = '処理中…';
+    api({ what: 'plannewmonth', pass: PASS }).then(r => { toast(r.msg); W = 0; load(); })
+      .catch(e => { b.disabled = false; b.textContent = '次の月を始める'; alert('できませんでした：' + (e.message || e)); });
+  };
+}
+
+function show(v) { return v ? v : 'なし'; }
+function addChange(b, a) {
+  const lines = [];
+  if (b.fa !== a.fa) lines.push('A：' + show(b.fa) + ' → ' + show(a.fa));
+  if (b.fn !== a.fn) lines.push('NEXT：' + show(b.fn) + ' → ' + show(a.fn));
+  if ((b.memo || '') !== (a.memo || '')) lines.push('備考：' + show(a.memo));
+  if (!lines.length) return;
+  const key = b.m * 100 + b.d;
+  CHG = CHG.filter(c => c.key !== key);
+  CHG.push({ key: key, label: b.label, lines: lines });
+  CHG.sort((x, y) => x.key - y.key);
+  try { localStorage.setItem('kokunishi_chg', JSON.stringify(CHG)); } catch (e) {}
+  notifyRender();
+}
+function notifyText() {
+  return '【予定変更のお知らせ】\n' + CHG.map(c => '■' + c.label + '\n' + c.lines.join('\n')).join('\n\n') +
+    '\n\n最新の予定表はこちら\n' + (D && D.view ? D.view : (D && D.url ? D.url + '?mode=schedule' : ''));
+}
+function notifyRender() {
+  const box = $('notify');
+  if (!CHG.length) { box.style.display = 'none'; return; }
+  const txt = notifyText();
+  box.innerHTML = '<div class="in"><div class="t">LINEでお知らせ（' + CHG.length + '件の変更）</div><pre>' + esc(txt) + '</pre>' +
+    '<div class="row2"><a class="line" id="nline" href="https://line.me/R/share?text=' + encodeURIComponent(txt) + '" target="_blank">LINEで送る</a>' +
+    '<button class="cp" id="ncp">文をコピー</button><button class="x" id="nx">閉じる</button></div></div>';
+  box.style.display = 'block';
+  const done = () => { CHG = []; try { localStorage.removeItem('kokunishi_chg'); } catch (e) {} notifyRender(); };
+  $('nline').onclick = () => { setTimeout(() => { if (confirm('LINEで送れましたか？（OKでお知らせ欄を閉じます）')) done(); }, 1500); };
+  $('ncp').onclick = () => {
+    const t = notifyText();
+    const ok = () => toast('コピーしました。LINEに貼って送ってください');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, () => prompt('コピーしてください', t)); else prompt('コピーしてください', t);
+  };
+  $('nx').onclick = () => { if (confirm('お知らせせずに閉じますか？（変更はそのまま保存されています）')) done(); };
+}
+
+// 文字 → 編集状態
+function parse(v) {
+  v = v || '';
+  if (!v) return { k: 'fix', place: '', s: '17：00', e: '19：00', text: '' };
+  if (v === '休み') return { k: 'off', place: '', s: '17：00', e: '19：00', text: '' };
+  if (v === '応援') return { k: 'cheer', place: '', s: '17：00', e: '19：00', text: '' };
+  const m = v.match(/^(.*?)\s*(\d{1,2})[:：](\d{2})\s*[〜~～]\s*(\d{1,2})[:：](\d{2})$/);
+  if (m) return { k: 'prac', place: m[1], s: m[2] + '：' + m[3], e: m[4] + '：' + m[5], text: '' };
+  return { k: 'game', place: '', s: '9：00', e: '12：00', text: v };
+}
+// 編集状態 → 文字
+function build(t) {
+  if (t.k === 'fix') return '';
+  if (t.k === 'off') return '休み';
+  if (t.k === 'cheer') return '応援';
+  if (t.k === 'prac') return (t.place || '') + t.s + '〜' + t.e;
+  return t.text.trim();
+}
+
+function render() {
+  $('list').innerHTML = D.days.map(d => {
+    const we = (d.w === '土' || d.w === '日' || d.hol) ? ' we' : '';
+    let h = '<div class="day' + we + '" id="d' + d.i + '"><div class="dh"><span>' + d.m + '/' + d.d + '（' + esc(d.w) + (d.hol ? '・祝' : '') + '）</span>' +
+      '<button data-open="' + d.i + '">' + (open === d.i ? '閉じる' : '変更') + '</button></div>';
+    h += '<div class="row"><span class="tag a">A</span><span>' + esc(d.fa || '―') + (d.ia && !D.saved ? '<span class="chg">変更</span>' : '') + '</span></div>';
+    h += '<div class="row"><span class="tag n">NEXT</span><span>' + esc(d.fn || '―') + (d.in && !D.saved ? '<span class="chg">変更</span>' : '') + '</span></div>';
+    if (d.memo) h += '<div class="memo">備考：' + esc(d.memo) + '</div>';
+    if (open === d.i) h += editor(d);
+    return h + '</div>';
+  }).join('');
+}
+
+function editor(d) {
+  return '<div class="ed">' + teamEd('a', 'A', d.xa) + teamEd('n', 'NEXT/Second', d.xn) +
+    '<div class="lbl">備考（任意）</div><input type="text" id="memo" value="' + esc(ED.memo) + '" placeholder="例：18：45お迎えお願いします！">' +
+    '<div class="acts" style="margin-top:10px"><button class="btn ghost" data-cancel="1">やめる</button><button class="btn" data-save="' + d.i + '">保存</button></div></div>';
+}
+function teamEd(key, label, fixed) {
+  const t = ED[key];
+  const kinds = [['fix', D.saved ? '空欄' : '固定どおり'], ['prac', '練習'], ['game', '試合・大会'], ['cheer', '応援'], ['off', '休み']];
+  let h = '<div class="team ' + key + '"><h3>' + label + '</h3><div class="chips">' +
+    kinds.map(k => '<button class="chip' + (t.k === k[0] ? ' on' : '') + '" data-t="' + key + '" data-k="' + k[0] + '">' + k[1] + '</button>').join('') + '</div>';
+  if (t.k === 'fix') h += '<div class="prev">' + (D.saved ? '（空欄にします）' : '固定：' + esc(fixed || '（練習なし）')) + '</div>';
+  if (t.k === 'prac') {
+    h += '<div class="lbl">場所</div><div class="chips">' +
+      PLACES.map(p => '<button class="chip' + (t.place === p ? ' on' : '') + '" data-t="' + key + '" data-p="' + esc(p) + '">' + esc(p) + '</button>').join('') + '</div>' +
+      '<input type="text" data-t="' + key + '" data-f="place" value="' + esc(t.place) + '" placeholder="その他の場所">' +
+      '<div class="times"><select data-t="' + key + '" data-f="s">' + opts(t.s) + '</select>〜<select data-t="' + key + '" data-f="e">' + opts(t.e) + '</select></div>';
+  }
+  if (t.k === 'game') h += '<input type="text" data-t="' + key + '" data-f="text" value="' + esc(t.text) + '" placeholder="例：市原市秋季大会／練習試合@三郷台小">';
+  if (t.k !== 'fix') h += '<div class="prev">予定表の表示：' + esc(build(t) || '（空欄）') + '</div>';
+  return h + '</div>';
+}
+function opts(cur) {
+  const list = TIMES.indexOf(cur) < 0 ? [cur].concat(TIMES) : TIMES;
+  return list.map(t => '<option' + (t === cur ? ' selected' : '') + '>' + t + '</option>').join('');
+}
+
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.open !== undefined) {
+    const i = Number(b.dataset.open);
+    if (open === i) { open = -1; render(); return; }
+    const d = D.days.find(x => x.i === i);
+    open = i; ED = { a: parse(d.ia), n: parse(d.in), memo: d.memo || '' };
+    render(); document.getElementById('d' + i).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (b.dataset.cancel) { open = -1; render(); return; }
+  if (b.dataset.k) { ED[b.dataset.t].k = b.dataset.k; render(); return; }
+  if (b.dataset.p !== undefined) { ED[b.dataset.t].place = b.dataset.p; render(); return; }
+  if (b.dataset.save !== undefined) {
+    const i = Number(b.dataset.save);
+    if (ED.a.k === 'game' && !ED.a.text.trim() || ED.n.k === 'game' && !ED.n.text.trim()) { alert('試合・大会の名前を入れてください'); return; }
+    b.disabled = true; b.textContent = '保存中…';
+    const before = D.days.find(x => x.i === i);
+    const bef = before ? { fa: before.fa, fn: before.fn, memo: before.memo, label: before.m + '/' + before.d + '（' + before.w + '）', m: before.m, d: before.d } : null;
+    const wasNextPrivate = D.isNext && !D.pub;
+    api({ what: 'plansave', pass: PASS, i: i, a: build(ED.a), n: build(ED.n), memo: ED.memo, which: W }).then(d => {
+      D = d; open = -1; render(); toast('保存しました');
+      const a = d.days.find(x => x.i === i);
+      if (bef && a && !wasNextPrivate) addChange(bef, a);
+      else if (wasNextPrivate) toast('保存しました（来月分は非公開なのでお知らせは作りません）');
+    }).catch(err => { b.disabled = false; b.textContent = '保存'; alert('保存できませんでした：' + (err.message || err)); });
+  }
+});
+$('list').addEventListener('input', e => {
+  const el = e.target; if (!el.dataset) return;
+  if (el.id === 'memo') { ED.memo = el.value; return; }
+  if (el.dataset.t && el.dataset.f) {
+    ED[el.dataset.t][el.dataset.f] = el.value;
+    const pv = el.closest('.team').querySelector('.prev');
+    if (pv) pv.textContent = '予定表の表示：' + (build(ED[el.dataset.t]) || '（空欄）');
+    if (el.dataset.f === 'place') el.closest('.team').querySelectorAll('[data-p]').forEach(c => c.classList.toggle('on', c.dataset.p === el.value));
+  }
+});
+$('list').addEventListener('change', e => { if (e.target.tagName === 'SELECT') e.target.dispatchEvent(new Event('input', { bubbles: true })); });
+</script>
+</body>
+</html>
