@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>国西Monsters 予定表</title>
-<link rel="stylesheet" href="theme.css?v=13">
+<link rel="stylesheet" href="theme.css?v=14">
 <meta name="theme-color" content="#070707">
 <link rel="icon" href="mark.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -263,6 +263,9 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // 今日の予定のすぐ上にも細い帯（写真＋名前）を出し、開いた瞬間に目に入るようにする。
 var BD = null;
 function bdIni_(name) { var p = String(name || '').split(/\s+/); return esc(((p[1] || p[0] || '?').charAt(0))); }
+var STRIP_SPARKS = [[8, 22], [30, 68], [52, 14], [74, 62], [90, 24], [63, 82]].map(function (p, i) {
+  return '<i class="sp" style="left:' + p[0] + '%;top:' + p[1] + '%;animation-delay:' + (i * 0.4) + 's;animation-duration:' + (2.8 + (i % 4) * 0.5) + 's"></i>';
+}).join('');
 function bdStrip_(land) {
   const old = $('bdstrip'); if (old) old.remove();
   const now = $('now');
@@ -272,7 +275,7 @@ function bdStrip_(land) {
   const el = document.createElement('div');
   el.id = 'bdstrip';
   el.className = 'bdstrip' + (anyToday ? ' today' : '');
-  el.innerHTML = '<span class="bdstrip-phs">' + BD.kids.map(k =>
+  el.innerHTML = STRIP_SPARKS + '<span class="bdstrip-phs">' + BD.kids.map(k =>
     '<span class="bdstrip-ph">' + (k.photo ? '<img src="' + k.photo + '" alt="">' : '<span class="bdstrip-ini">' + bdIni_(k.name) + '</span>') + '</span>').join('') + '</span>' +
     '<span class="bdstrip-tx"><b>' + (BD.upcoming ? '来月・' + BD.month + '月生まれ' : BD.month + '月生まれ') + (anyToday ? '　今日が誕生日！' : '') + '</b>' +
     '<i>' + BD.kids.map(k => esc(k.name) + ' ' + BD.month + '.' + k.day).join('・') + '</i></span>' +
