@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>国西Monsters 予定表</title>
-<link rel="stylesheet" href="theme.css?v=12">
+<link rel="stylesheet" href="theme.css?v=13">
 <meta name="theme-color" content="#070707">
 <link rel="icon" href="mark.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -95,7 +95,8 @@ function render(keepScroll) {
   if ($('go')) $('go').onclick = e => { e.preventDefault(); $('now').scrollIntoView({ behavior: 'smooth' }); };
   $('notes').innerHTML = DATA.notes && DATA.notes.length ? '<div class="notes"><b>≪お願いと注意点≫</b><br>' + DATA.notes.map(esc).join('<br>') + '</div>' : '';
   $('st').textContent = (fresh ? '最新の予定です' : '前回の予定を表示中…最新を確認しています') + (DATA.at ? '（' + DATA.at + ' 時点）' : '') + '。変更があったときはLINEでもお知らせします。';
-  if (!keepScroll && isThis && $('now')) setTimeout(() => $('now').scrollIntoView({ block: 'start' }), 50);
+  bdStrip_();
+  if (!keepScroll && isThis && $('now')) setTimeout(() => { const t = $('bdstrip') || $('now'); if (t) t.scrollIntoView({ block: 'start' }); }, 50);
 }
 
 // ===== 表（紙の月間予定表と同じ並び）=====
@@ -258,6 +259,29 @@ load();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); });
 
 // ===== 誕生日コーナー（今月の子。0人なら来月を予告）=====
+// 開いた直後は今日の予定に飛ぶため、上のコーナーが見えなくなる。
+// 今日の予定のすぐ上にも細い帯（写真＋名前）を出し、開いた瞬間に目に入るようにする。
+var BD = null;
+function bdIni_(name) { var p = String(name || '').split(/\s+/); return esc(((p[1] || p[0] || '?').charAt(0))); }
+function bdStrip_(land) {
+  const old = $('bdstrip'); if (old) old.remove();
+  const now = $('now');
+  if (!BD || !now || !BD.kids || !BD.kids.length) return;
+  const beforeTop = now.getBoundingClientRect().top;
+  const anyToday = BD.kids.some(k => k.today);
+  const el = document.createElement('div');
+  el.id = 'bdstrip';
+  el.className = 'bdstrip' + (anyToday ? ' today' : '');
+  el.innerHTML = '<span class="bdstrip-phs">' + BD.kids.map(k =>
+    '<span class="bdstrip-ph">' + (k.photo ? '<img src="' + k.photo + '" alt="">' : '<span class="bdstrip-ini">' + bdIni_(k.name) + '</span>') + '</span>').join('') + '</span>' +
+    '<span class="bdstrip-tx"><b>' + (BD.upcoming ? '来月・' + BD.month + '月生まれ' : BD.month + '月生まれ') + (anyToday ? '　今日が誕生日！' : '') + '</b>' +
+    '<i>' + BD.kids.map(k => esc(k.name) + ' ' + BD.month + '.' + k.day).join('・') + '</i></span>' +
+    '<span class="bdstrip-go">お祝いは上へ ↑</span>';
+  el.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  now.parentNode.insertBefore(el, now);
+  // 誕生日データの到着が初回の着地より遅れたときだけ、着地位置にいる間は帯に合わせ直す
+  if (land && Math.abs(beforeTop) < 3) el.scrollIntoView({ block: 'start' });
+}
 (function () {
   var MONTH_EN = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
   function ini(name) { var p = String(name || '').split(/\s+/); return esc(((p[1] || p[0] || '?').charAt(0))); }
@@ -271,6 +295,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
   }).join('');
   function renderBd(d) {
     if (!d || !d.kids || !d.kids.length) return;
+    BD = d;
     var kids = d.kids.map(function (k) {
       var face = k.photo ? '<img src="' + k.photo + '" alt="">' : '<span class="bdini">' + ini(k.name) + '</span>';
       return '<div class="bdkid' + (k.today ? ' today' : '') + '"><div class="bdph">' + face + (k.today ? '<span class="bdtoday">TODAY</span>' : '') + '</div>' +
@@ -280,6 +305,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
       '<div class="bdhead"><div><p class="bden">' + MONTH_EN[d.month - 1] + ' BIRTHDAYS</p><p class="bdtitle">' + (d.upcoming ? '来月は、このメンバー' : d.month + '月生まれのメンバー') + '</p></div>' +
       '<div class="bdhr">' + CAKE + '<p class="bdhb">HAPPY<br>BIRTHDAY</p></div></div><div class="bdkids">' + kids + '</div>' +
       (d.upcoming ? '<p class="bdnote">来月になったら、ここでお祝いします</p>' : '') + '</section>';
+    bdStrip_(true);
   }
   fetch(GAS + '?mode=api&what=birthday&t=' + Date.now()).then(r => r.json()).then(renderBd).catch(function () {});
 })();
