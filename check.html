@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>国西Monsters 当日出席簿</title>
-<link rel="stylesheet" href="theme.css?v=10">
+<link rel="stylesheet" href="theme.css?v=11">
 <meta name="theme-color" content="#070707">
 <link rel="icon" href="mark.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -14,13 +14,32 @@
 <header><div class="brand"><img class="mark" src="mark.png" alt=""><div class="wm">KOKUNISHI<b>MONSTERS</b></div></div>
 <h1>当日出席簿（当番用）</h1>
   <div class="nv"><button id="pv">◀ 前</button><div class="d" id="dt">読み込み中…</div><button id="nx">次 ▶</button></div>
-  <div class="sum"><div><b id="c1">-</b>到着</div><div><b id="c2">-</b>まだ</div><div><b id="c3">-</b>欠席</div></div>
+  <div class="sum"><div id="s1" title="到着した人だけ表示"><b id="c1">-</b>到着</div><div id="s2" title="まだの人だけ表示"><b id="c2">-</b>まだ</div><div id="s3" title="欠席の人だけ表示"><b id="c3">-</b>欠席</div></div>
 </header>
+<style>
+.sum div{cursor:pointer}
+.sum div.on{outline:2px solid #ffce1f;outline-offset:-2px;background:#2c2c24}
+.fbar{display:none;margin:10px 0 0;font-size:13px;color:#ffce1f}
+.fbar b{font-size:15px}
+.p.sel{outline:2px solid #ffce1f;outline-offset:-2px;background:#33301e !important}
+.p .ck{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid #ffce1f;color:#ffce1f;display:none;align-items:center;justify-content:center;font-weight:700}
+#list.selmode .p .ck{display:flex}
+#list.selmode .p .ab,#list.selmode .p select{display:none}
+#selbtn{width:100%;margin:8px 0 0;padding:12px;border:1px solid #55534c;border-radius:12px;background:#1d1d1b;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+#selbar{display:none;margin:10px 0 0;padding:10px;border:1px solid #ffce1f;border-radius:12px;color:#ffce1f;font-size:14px}
+#selbar button{padding:10px 14px;border-radius:10px;border:0;font-size:14px;font-weight:700;cursor:pointer}
+#selgo{background:#ffce1f;color:#1d1d1b}
+#selcancel{background:#2c2c2a;color:#fff;margin-left:8px}
+</style>
 <nav id="nav"></nav>
 <main>
   <div class="card" id="login" style="display:none"><div style="font-size:12px;color:#77756f;margin-bottom:6px">パスコードを入れてください</div><input type="password" id="pass" inputmode="numeric"><button id="go">開く</button></div>
   <div id="plan"></div>
-  <p class="help">着いた子の「到着」を押してください（もう一度押すと取り消し）。当日の急な欠席・遅刻・早退は右の欄で変えられます。前もって連絡があった子は、名前の下に表示されます。</p>
+  <p class="help">着いた子の「到着」を押してください（もう一度押すと取り消し）。当日の急な欠席・遅刻・早退は右の欄で変えられます。前もって連絡があった子は、名前の下に表示されます。上の「到着／まだ／欠席」の数字を押すと、その人たちだけを表示できます（もう一度押すと全員に戻ります）。何人かをまとめて欠席にするときは「まとめて選んで欠席にする」から選んでください。</p>
+  <p class="fbar" id="fbar"></p>
+  <button id="bulk" style="display:none;width:100%;margin:10px 0 0;padding:12px;border:1px solid #ffce1f;border-radius:12px;background:#1d1d1b;color:#ffce1f;font-size:14px;font-weight:700;cursor:pointer"></button>
+  <button id="selbtn" style="display:none">まとめて選んで欠席にする</button>
+  <div id="selbar"><span id="selcount"></span><div style="margin-top:8px"><button id="selgo">選んだ子を欠席にする</button><button id="selcancel">やめる</button></div></div>
   <div id="list"><div class="msg">読み込み中…</div></div>
   <p class="st" id="st"></p>
 </main>
@@ -28,7 +47,8 @@
 <script src="common.js"></script>
 <script>
 nav('check');
-var D = null, PH = {}, PASS = '', CUR = -1, PENDING = 0;
+var D = null, PH = {}, PASS = '', CUR = -1, PENDING = 0, FILTER = '', SELMODE = false, SEL = {};
+function catOf(s) { return s.kind === '欠席' ? '欠席' : (s.arr ? '到着' : 'まだ'); }
 try { PASS = localStorage.getItem('kokunishi_check_pass') || ''; } catch (e) {}
 
 function pickDay() {
@@ -51,18 +71,36 @@ function render() {
   var a = 0, w = 0, x = 0, gs = [], h = '';
   D.players.forEach(function (p) { var s = info(p, d.key); if (s.kind === '欠席') x++; else if (s.arr) a++; else w++; if (gs.indexOf(p.grade) < 0) gs.push(p.grade); });
   $('c1').textContent = a; $('c2').textContent = w; $('c3').textContent = x;
+  $('s1').classList.toggle('on', FILTER === '到着'); $('s2').classList.toggle('on', FILTER === 'まだ'); $('s3').classList.toggle('on', FILTER === '欠席');
+  var fb = $('fbar');
+  if (FILTER) { var n = FILTER === '到着' ? a : (FILTER === 'まだ' ? w : x); fb.innerHTML = '「<b>' + FILTER + '</b>」の人だけ表示中（' + n + '人）。もう一度押すと全員に戻ります'; fb.style.display = 'block'; }
+  else fb.style.display = 'none';
   gs.forEach(function (g) {
-    h += '<h2>' + esc(g) + '</h2>';
+    var gh = '';
     D.players.forEach(function (p, i) {
       if (p.grade !== g) return;
-      var s = info(p, d.key), abs = s.kind === '欠席', note = s.kind !== '出席' ? s.kind + (s.memo ? '：' + s.memo : '') : '';
+      var s = info(p, d.key);
+      if (FILTER && catOf(s) !== FILTER) return;
+      var abs = s.kind === '欠席', note = s.kind !== '出席' ? s.kind + (s.memo ? '：' + s.memo : '') : '';
       var ph = PH[p.name] ? '<img class="ph" src="' + PH[p.name] + '" data-big="1">' : '<div class="ph">' + esc(p.name.charAt(0)) + '</div>';
-      h += '<div class="p' + (s.arr ? ' arr' : '') + (abs ? ' abs' : '') + '">' + ph + '<div class="nm">' + esc(p.name) + (note ? '<small>' + esc(note) + '</small>' : '') + '</div>' +
+      gh += '<div class="p' + (s.arr ? ' arr' : '') + (abs ? ' abs' : '') + (SEL[i] ? ' sel' : '') + '" data-i="' + i + '">' + ph + '<span class="ck">' + (SEL[i] ? '✓' : '') + '</span><div class="nm">' + esc(p.name) + (note ? '<small>' + esc(note) + '</small>' : '') + '</div>' +
         (abs ? '' : '<button class="ab' + (s.arr ? ' on' : '') + '" data-i="' + i + '">' + (s.arr ? '✓ ' + esc(s.arr) : '到着') + '</button>') +
         '<select data-i="' + i + '">' + ['出席', '欠席', '遅刻', '早退'].map(function (k) { return '<option' + (k === s.kind ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div>';
     });
+    if (gh) h += '<h2>' + esc(g) + '</h2>' + gh;
   });
+  if (FILTER && !h) h = '<div class="msg">「' + FILTER + '」の人はいません</div>';
   $('list').innerHTML = h;
+  var rest = D.players.filter(function (p) { var s = info(p, d.key); return s.kind === '出席' && !s.arr; });
+  var bk = $('bulk');
+  if (rest.length && !SELMODE) { bk.textContent = '残りの子を全員欠席にする（' + rest.length + '人）'; bk.style.display = 'block'; bk.dataset.n = rest.length; }
+  else bk.style.display = 'none';
+  var mada = D.players.filter(function (p) { return catOf(info(p, d.key)) === 'まだ'; }).length;
+  $('selbtn').style.display = (!SELMODE && mada) ? 'block' : 'none';
+  $('list').classList.toggle('selmode', SELMODE);
+  var sb = $('selbar');
+  if (SELMODE) { var n = Object.keys(SEL).length; $('selcount').textContent = '欠席にする子を選んでください（' + n + '人 選択中）。到着済み・欠席の子は選べません'; sb.style.display = 'block'; $('selgo').disabled = !n; $('selgo').style.opacity = n ? '1' : '.4'; }
+  else sb.style.display = 'none';
 }
 function save() { cacheSet('kokunishi_check_cache', D); }
 
@@ -99,11 +137,64 @@ load();
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') load(); });
 $('go').onclick = function () { PASS = $('pass').value.trim(); load(); };
 
-$('pv').onclick = function () { if (CUR > 0) { CUR--; render(); } };
-$('nx').onclick = function () { if (D && CUR < D.days.length - 1) { CUR++; render(); } };
+$('bulk').onclick = function () {
+  if (!D) return;
+  var key = D.days[CUR].key;
+  var rest = D.players.filter(function (p) { var s = info(p, key); return s.kind === '出席' && !s.arr; });
+  if (!rest.length) return;
+  if (!confirm('まだ来ていない ' + rest.length + ' 人を、全員「欠席」にします。よろしいですか？\n（遅刻・早退の連絡がある子は、そのまま残ります）')) return;
+  var bk = $('bulk'); bk.disabled = true; bk.textContent = '処理中…';
+  rest.forEach(function (p) { var k = p.name + '|' + key; D.att[k] = { kind: '欠席', memo: D.att[k] ? D.att[k].memo : '' }; });
+  save(); render(); PENDING++;
+  var chain = Promise.resolve(), failed = 0;
+  rest.forEach(function (p) {
+    chain = chain.then(function () {
+      return api({ what: 'checkset', key: key, name: p.name, kind: '欠席', memo: D.att[p.name + '|' + key].memo, pass: PASS }).catch(function () { failed++; });
+    });
+  });
+  chain.then(function () {
+    done(); bk.disabled = false; render();
+    if (failed) alert(failed + '人分を保存できませんでした。開き直して確認してください。');
+    else toast(rest.length + '人を欠席にしました');
+  });
+};
+function setFilter(f) { FILTER = (FILTER === f) ? '' : f; render(); }
+$('s1').onclick = function () { setFilter('到着'); };
+$('s2').onclick = function () { setFilter('まだ'); };
+$('s3').onclick = function () { setFilter('欠席'); };
+$('pv').onclick = function () { if (CUR > 0) { CUR--; SEL = {}; SELMODE = false; render(); } };
+$('nx').onclick = function () { if (D && CUR < D.days.length - 1) { CUR++; SEL = {}; SELMODE = false; render(); } };
+$('selbtn').onclick = function () { SELMODE = true; SEL = {}; render(); window.scrollTo(0, 0); };
+$('selcancel').onclick = function () { SELMODE = false; SEL = {}; render(); };
+$('selgo').onclick = function () {
+  var key = D.days[CUR].key;
+  var targets = Object.keys(SEL).map(function (k) { return D.players[Number(k)]; }).filter(function (p) { return p && catOf(info(p, key)) === 'まだ'; });
+  if (!targets.length) return;
+  if (!confirm(targets.length + '人を「欠席」にします。よろしいですか？')) return;
+  targets.forEach(function (p) { var k = p.name + '|' + key; D.att[k] = { kind: '欠席', memo: D.att[k] ? D.att[k].memo : '' }; delete D.arr[k]; });
+  SELMODE = false; SEL = {}; save(); render(); PENDING++;
+  var chain = Promise.resolve(), failed = 0;
+  targets.forEach(function (p) {
+    chain = chain.then(function () {
+      return api({ what: 'checkset', key: key, name: p.name, kind: '欠席', memo: D.att[p.name + '|' + key].memo, pass: PASS }).catch(function () { failed++; });
+    });
+  });
+  chain.then(function () {
+    done(); render();
+    if (failed) alert(failed + '人分を保存できませんでした。開き直して確認してください。');
+    else toast(targets.length + '人を欠席にしました');
+  });
+};
 
 function done() { PENDING = Math.max(0, PENDING - 1); }
 $('list').addEventListener('click', function (e) {
+  if (SELMODE) {
+    var row = e.target.closest('.p'); if (!row || row.dataset.i === undefined) return;
+    var pi = Number(row.dataset.i), pp = D.players[pi];
+    if (catOf(info(pp, D.days[CUR].key)) !== 'まだ') { toast('到着済み・欠席の子は選べません'); return; }
+    if (SEL[pi]) delete SEL[pi]; else SEL[pi] = 1;
+    render(); return;
+  }
   var im = e.target.closest('img[data-big]');
   if (im) { $('big').innerHTML = '<img src="' + im.src + '">'; $('big').style.display = 'flex'; return; }
   var b = e.target.closest('button.ab'); if (!b) return;
