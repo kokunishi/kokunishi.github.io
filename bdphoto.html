@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>国西Monsters 誕生日写真登録</title>
+<link rel="stylesheet" href="theme.css?v=11">
+<meta name="theme-color" content="#070707">
+<link rel="icon" href="mark.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  header h1{margin:0;font-size:18px}
+  header h1::after{display:none}
+  header p{margin:6px 0 0}
+  label{font-size:12px;color:var(--sub);display:block;margin-bottom:6px}
+  .pv{width:160px;height:160px;border-radius:50%;background:#1c1c1c;border:1px solid var(--line);margin:8px auto 12px;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:13px;overflow:hidden}
+  .pv img{width:100%;height:100%;object-fit:cover}
+  .btn{display:block;width:100%;box-sizing:border-box;text-align:center;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:700;margin-top:8px;font-family:inherit}
+  .b1{background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,#f2b800);color:#121000}
+  .b2{background:#161616;border:1px solid var(--line);color:#fff}
+  .b3{background:#161616;color:#ff8080;border:1px solid rgba(255,128,128,.4)}
+  .btn:disabled{opacity:.35}
+</style>
+</head>
+<body class="pg-photo">
+<header><div class="brand"><img class="mark" src="mark.png" alt=""><div class="wm">KOKUNISHI<b>MONSTERS</b></div></div>
+<h1>誕生日写真登録</h1>
+<p>予定表TOPの「誕生日コーナー」に載せる写真です</p>
+</header>
+<nav id="nav"></nav>
+<main>
+  <div class="card" id="login" style="display:none"><label>パスコード（チームのLINEでお知らせしています）</label><input type="password" id="pass" inputmode="numeric"><button class="btn b1" id="go">開く</button></div>
+  <div id="body" style="display:none">
+    <p class="help">・登録した写真は、<b>予定表TOPの「誕生日コーナー」に、その子の誕生月だけ表示されます</b>。サイトのURLを知っている人が見られる場所に載ります。<br>・当日出席簿の写真とは別です（あちらは出席簿だけ、こちらはTOP用）。両方載せたい場合は、それぞれ登録してください。<br>・登録は自由です。登録しない場合は、名前の頭文字で表示されます。<br>・顔がはっきり分かる写真を選んでください（自動で小さく丸く切り抜かれます）。<br>・「写真を消す」でいつでも削除できます。</p>
+    <div class="card"><label>選手の名前を選んでください</label><select id="who"></select>
+      <div class="pv" id="pv">写真なし</div>
+      <input type="file" id="file" accept="image/*" style="display:none">
+      <button class="btn b2" id="pick" disabled>写真を選ぶ・撮る</button>
+      <button class="btn b1" id="save" disabled>この写真で登録する</button>
+      <button class="btn b3" id="del" disabled>写真を消す</button></div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script src="common.js"></script>
+<script>
+nav('photo');
+var PASS = '', P = [], NEW = '';
+function fail(e) { alert('エラー：' + (e.message || e)); }
+try { PASS = localStorage.getItem('kokunishi_check_pass') || ''; } catch (e) {}
+
+function init() {
+  api({ what: 'bdinit', pass: PASS }).then(function (d) {
+    if (d.needPass) { $('login').style.display = 'block'; $('body').style.display = 'none'; return; }
+    try { localStorage.setItem('kokunishi_check_pass', PASS); } catch (e) {}
+    $('login').style.display = 'none'; $('body').style.display = 'block'; P = d.players;
+    var gs = [], h = '<option value="">― 選択 ―</option>';
+    P.forEach(function (p) { if (gs.indexOf(p.grade) < 0) gs.push(p.grade); });
+    gs.forEach(function (g) {
+      h += '<optgroup label="' + esc(g) + '">' + P.filter(function (p) { return p.grade === g; }).map(function (p) {
+        return '<option value="' + esc(p.name) + '">' + esc(p.name) + (p.has ? '（登録済み）' : '') + '</option>';
+      }).join('') + '</optgroup>';
+    });
+    $('who').innerHTML = h;
+  }).catch(fail);
+}
+$('go').onclick = function () { PASS = $('pass').value.trim(); init(); };
+
+$('who').onchange = function () {
+  NEW = ''; var n = this.value;
+  $('pick').disabled = !n; $('save').disabled = true; $('del').disabled = true;
+  $('pv').innerHTML = n ? '読み込み中…' : '写真なし';
+  if (!n) return;
+  api({ what: 'bdget', pass: PASS, name: n }).then(function (d) {
+    $('pv').innerHTML = d.data ? '<img src="' + d.data + '">' : '写真なし';
+    $('del').disabled = !d.data;
+  }).catch(fail);
+};
+$('pick').onclick = function () { $('file').click(); };
+$('file').onchange = function () {
+  var f = this.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function () {
+    var im = new Image();
+    im.onload = function () {
+      var S = 200, c = document.createElement('canvas'); c.width = S; c.height = S;
+      var x = c.getContext('2d'), m = Math.min(im.width, im.height);
+      x.drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, S, S);
+      var q = 0.8, d = c.toDataURL('image/jpeg', q);
+      while (d.length > 40000 && q > 0.3) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+      NEW = d; $('pv').innerHTML = '<img src="' + d + '">'; $('save').disabled = false;
+    };
+    im.src = r.result;
+  };
+  r.readAsDataURL(f); this.value = '';
+};
+
+// 写真データはURLの長さ制限に当たらないよう6,000字ずつに分けて送り、最後に組み立ててもらう
+function uploadPhoto(name, data) {
+  var CH = 6000, parts = [];
+  for (var i = 0; i < data.length; i += CH) parts.push(data.slice(i, i + CH));
+  var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  var chain = Promise.resolve();
+  parts.forEach(function (p, idx) {
+    chain = chain.then(function () { return api({ what: 'bdup', pass: PASS, id: id, part: idx, total: parts.length, data: p }); });
+  });
+  return chain.then(function () { return api({ what: 'bdup', pass: PASS, id: id, done: '1', total: parts.length, name: name }); });
+}
+$('save').onclick = function () {
+  var n = $('who').value; if (!n || !NEW) return;
+  var btn = this; btn.disabled = true; btn.textContent = '登録中…';
+  uploadPhoto(n, NEW).then(function () {
+    toast('登録しました'); NEW = ''; $('del').disabled = false;
+    btn.textContent = 'この写真で登録する';
+    P.forEach(function (p) { if (p.name === n) p.has = true; });
+    var o = $('who').selectedOptions[0];
+    if (o && o.textContent.indexOf('登録済み') < 0) o.textContent += '（登録済み）';
+  }).catch(function (e) { btn.disabled = false; btn.textContent = 'この写真で登録する'; fail(e); });
+};
+$('del').onclick = function () {
+  var n = $('who').value; if (!n || !confirm(n + 'さんの写真を消しますか？')) return;
+  api({ what: 'bddel', pass: PASS, name: n }).then(function () {
+    toast('消しました'); $('pv').innerHTML = '写真なし'; $('del').disabled = true;
+    P.forEach(function (p) { if (p.name === n) p.has = false; });
+    var o = $('who').selectedOptions[0]; if (o) o.textContent = n;
+  }).catch(fail);
+};
+init();
+</script>
+<script src="aiop.js"></script>
+</body>
+</html>
