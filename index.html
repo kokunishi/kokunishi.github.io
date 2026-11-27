@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>国西Monsters 予定表</title>
-<link rel="stylesheet" href="theme.css?v=11">
+<link rel="stylesheet" href="theme.css?v=12">
 <meta name="theme-color" content="#070707">
 <link rel="icon" href="mark.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -261,6 +261,14 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 (function () {
   var MONTH_EN = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
   function ini(name) { var p = String(name || '').split(/\s+/); return esc(((p[1] || p[0] || '?').charAt(0))); }
+  var CAKE = '<svg class="bdcake" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+    '<g stroke="#ffce1f" stroke-opacity=".16" stroke-width="9"><path d="M14 44h36M10 56h44M32 18v6M22 20v6M42 20v6"/></g>' +
+    '<g stroke="#ffce1f" stroke-width="2.6"><path d="M14 44h36M10 56h44"/><path d="M14 44v-6c6 3 9-3 12 0 3 3 6-3 9 0 3 3 6-3 9 0 3-2 4 0 6 0v6M10 56V44M54 56V44M32 24v-6M22 26v-6M42 26v-6"/></g>' +
+    '<g stroke="#fff7cf" stroke-width="1.2"><path d="M14 44h36M10 56h44"/></g>' +
+    '<path d="M32 10c2 2.4 2 4.4 0 6-2-1.6-2-3.6 0-6zM22 12c2 2.4 2 4.4 0 6-2-1.6-2-3.6 0-6zM42 12c2 2.4 2 4.4 0 6-2-1.6-2-3.6 0-6z" fill="#fff7cf" stroke="none"/></g></svg>';
+  var SPARKS = [[6,18],[16,64],[28,10],[46,30],[58,70],[72,14],[84,52],[93,24],[38,78],[66,86]].map(function (p, i) {
+    return '<i class="sp" style="left:' + p[0] + '%;top:' + p[1] + '%;animation-delay:' + (i * 0.35) + 's;animation-duration:' + (3.1 + (i % 5) * 0.65) + 's"></i>';
+  }).join('');
   function renderBd(d) {
     if (!d || !d.kids || !d.kids.length) return;
     var kids = d.kids.map(function (k) {
@@ -268,9 +276,9 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
       return '<div class="bdkid' + (k.today ? ' today' : '') + '"><div class="bdph">' + face + (k.today ? '<span class="bdtoday">TODAY</span>' : '') + '</div>' +
         '<b>' + esc(k.name) + '</b><span class="bddate">' + d.month + '.' + k.day + '</span><span class="bdgrade">' + esc(k.grade) + '</span></div>';
     }).join('');
-    $('bd').innerHTML = '<section class="bd' + (d.upcoming ? ' up' : '') + '">' +
+    $('bd').innerHTML = '<section class="bd' + (d.upcoming ? ' up' : '') + '">' + SPARKS +
       '<div class="bdhead"><div><p class="bden">' + MONTH_EN[d.month - 1] + ' BIRTHDAYS</p><p class="bdtitle">' + (d.upcoming ? '来月は、このメンバー' : d.month + '月生まれのメンバー') + '</p></div>' +
-      '<p class="bdhb">HAPPY<br>BIRTHDAY</p></div><div class="bdkids">' + kids + '</div>' +
+      '<div class="bdhr">' + CAKE + '<p class="bdhb">HAPPY<br>BIRTHDAY</p></div></div><div class="bdkids">' + kids + '</div>' +
       (d.upcoming ? '<p class="bdnote">来月になったら、ここでお祝いします</p>' : '') + '</section>';
   }
   fetch(GAS + '?mode=api&what=birthday&t=' + Date.now()).then(r => r.json()).then(renderBd).catch(function () {});
