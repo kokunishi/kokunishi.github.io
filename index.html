@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>国西Monsters 予定表</title>
-<link rel="stylesheet" href="theme.css?v=10">
+<link rel="stylesheet" href="theme.css?v=11">
 <meta name="theme-color" content="#070707">
 <link rel="icon" href="mark.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -15,6 +15,7 @@
 <h1>予定表</h1><p id="sub">読み込み中…</p></header>
 <nav id="nav"></nav>
 <main>
+  <div id="bd"></div>
   <div class="tabs" id="tabs"></div>
   <div class="vbar">
     <div class="seg" id="seg"><button data-v="list">リスト</button><button data-v="table">表</button></div>
@@ -255,6 +256,25 @@ function load() {
 }
 load();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); });
+
+// ===== 誕生日コーナー（今月の子。0人なら来月を予告）=====
+(function () {
+  var MONTH_EN = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  function ini(name) { var p = String(name || '').split(/\s+/); return esc(((p[1] || p[0] || '?').charAt(0))); }
+  function renderBd(d) {
+    if (!d || !d.kids || !d.kids.length) return;
+    var kids = d.kids.map(function (k) {
+      var face = k.photo ? '<img src="' + k.photo + '" alt="">' : '<span class="bdini">' + ini(k.name) + '</span>';
+      return '<div class="bdkid' + (k.today ? ' today' : '') + '"><div class="bdph">' + face + (k.today ? '<span class="bdtoday">TODAY</span>' : '') + '</div>' +
+        '<b>' + esc(k.name) + '</b><span class="bddate">' + d.month + '.' + k.day + '</span><span class="bdgrade">' + esc(k.grade) + '</span></div>';
+    }).join('');
+    $('bd').innerHTML = '<section class="bd' + (d.upcoming ? ' up' : '') + '">' +
+      '<div class="bdhead"><div><p class="bden">' + MONTH_EN[d.month - 1] + ' BIRTHDAYS</p><p class="bdtitle">' + (d.upcoming ? '来月は、このメンバー' : d.month + '月生まれのメンバー') + '</p></div>' +
+      '<p class="bdhb">HAPPY<br>BIRTHDAY</p></div><div class="bdkids">' + kids + '</div>' +
+      (d.upcoming ? '<p class="bdnote">来月になったら、ここでお祝いします</p>' : '') + '</section>';
+  }
+  fetch(GAS + '?mode=api&what=birthday&t=' + Date.now()).then(r => r.json()).then(renderBd).catch(function () {});
+})();
 </script>
 <script>
 /* 国西Monsters 遊び心：金のネオンのバスケットボールが、ポンッと出てきて弾んで消える。
